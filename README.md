@@ -9,6 +9,8 @@ A Node.js REST API with Swagger documentation for tracking Brandmeister DMR radi
 - SQLite database for local data storage
 - Interactive Swagger/OpenAPI documentation
 - Endpoints for managing lastheard entries
+- API key authentication with email verification
+- Configurable email notifications
 
 ## Prerequisites
 
@@ -28,6 +30,24 @@ cd bm-lh-nextgen
 npm install
 ```
 
+3. Configure environment variables (optional):
+```bash
+cp .env.example .env
+# Edit .env with your email server configuration
+```
+
+## Environment Variables
+
+The following environment variables can be configured:
+
+- `PORT` - Server port (default: 3000)
+- `BASE_URL` - Base URL for email links (default: http://localhost:3000)
+- `EMAIL_HOST` - SMTP server hostname
+- `EMAIL_PORT` - SMTP server port (default: 587)
+- `EMAIL_USER` - SMTP username
+- `EMAIL_PASSWORD` - SMTP password
+- `EMAIL_FROM` - From email address (default: noreply@example.com)
+
 ## Running the Application
 
 Start the server:
@@ -42,6 +62,26 @@ npm run dev
 
 The server will start on `http://localhost:3000`
 
+## API Authentication
+
+The API uses API key authentication. To use the API endpoints:
+
+1. **Request an API Key:**
+   - Visit `http://localhost:3000/api/auth/request-key` in your browser
+   - Fill in the form with your name and email
+   - Check your email for a verification link
+
+2. **Verify Your Email:**
+   - Click the verification link in the email
+   - You will receive your API key via email and on the verification page
+
+3. **Use the API Key:**
+   - Include the API key in the `X-API-Key` header with all API requests
+   - Example:
+   ```bash
+   curl -H "X-API-Key: your-api-key-here" http://localhost:3000/api/lastheard
+   ```
+
 ## API Documentation
 
 Once the server is running, access the interactive Swagger documentation at:
@@ -51,6 +91,12 @@ http://localhost:3000/api-docs
 
 ## API Endpoints
 
+### Authentication
+- `GET /api/auth/request-key` - Display API key request form
+- `POST /api/auth/request-key` - Submit API key request
+- `GET /api/auth/verify-email?token=<token>` - Verify email and receive API key
+
+### Lastheard (Requires API Key)
 - `GET /` - API information
 - `GET /health` - Health check
 - `GET /api/lastheard` - Get recent lastheard entries
@@ -75,6 +121,23 @@ The `lastheard` table includes:
 - `reflector` - Reflector name
 - `created_at` - Record creation timestamp
 
+The `api_keys` table includes:
+- `id` - Unique identifier
+- `api_key` - API key (UUID)
+- `name` - User's name
+- `email` - User's email
+- `is_active` - Active status
+- `created_at` - Creation timestamp
+
+The `email_verifications` table includes:
+- `id` - Unique identifier
+- `email` - User's email
+- `name` - User's name
+- `verification_token` - Verification token (UUID)
+- `is_verified` - Verification status
+- `created_at` - Creation timestamp
+- `expires_at` - Expiration timestamp
+
 ## Project Structure
 
 ```
@@ -84,10 +147,16 @@ bm-lh-nextgen/
 │   │   └── swagger.js       # Swagger configuration
 │   ├── db/
 │   │   └── database.js      # Database initialization
+│   ├── middleware/
+│   │   └── auth.js          # Authentication middleware
 │   ├── routes/
+│   │   ├── auth.js          # Authentication routes
 │   │   └── lastheard.js     # API routes
+│   ├── services/
+│   │   └── emailService.js  # Email service
 │   └── server.js            # Main server file
 ├── data/                    # SQLite database directory
+├── .env.example             # Environment variables template
 ├── package.json
 └── README.md
 ```

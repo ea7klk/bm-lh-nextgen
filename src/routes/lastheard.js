@@ -1,10 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const { db } = require('../db/database');
+const { authenticateApiKey } = require('../middleware/auth');
 
 /**
  * @swagger
  * components:
+ *   securitySchemes:
+ *     ApiKeyAuth:
+ *       type: apiKey
+ *       in: header
+ *       name: X-API-Key
  *   schemas:
  *     LastheardEntry:
  *       type: object
@@ -44,6 +50,8 @@ const { db } = require('../db/database');
  *   get:
  *     summary: Get recent lastheard entries
  *     description: Retrieve the most recent lastheard entries
+ *     security:
+ *       - ApiKeyAuth: []
  *     parameters:
  *       - in: query
  *         name: limit
@@ -60,8 +68,12 @@ const { db } = require('../db/database');
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/LastheardEntry'
+ *       401:
+ *         description: API key is required
+ *       403:
+ *         description: Invalid or inactive API key
  */
-router.get('/lastheard', (req, res) => {
+router.get('/lastheard', authenticateApiKey, (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
     const stmt = db.prepare('SELECT * FROM lastheard ORDER BY timestamp DESC LIMIT ?');
@@ -78,6 +90,8 @@ router.get('/lastheard', (req, res) => {
  *   get:
  *     summary: Get a specific lastheard entry
  *     description: Retrieve a single lastheard entry by ID
+ *     security:
+ *       - ApiKeyAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -92,10 +106,14 @@ router.get('/lastheard', (req, res) => {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/LastheardEntry'
+ *       401:
+ *         description: API key is required
+ *       403:
+ *         description: Invalid or inactive API key
  *       404:
  *         description: Entry not found
  */
-router.get('/lastheard/:id', (req, res) => {
+router.get('/lastheard/:id', authenticateApiKey, (req, res) => {
   try {
     const stmt = db.prepare('SELECT * FROM lastheard WHERE id = ?');
     const entry = stmt.get(req.params.id);
@@ -116,6 +134,8 @@ router.get('/lastheard/:id', (req, res) => {
  *   post:
  *     summary: Create a new lastheard entry
  *     description: Add a new lastheard entry to the database
+ *     security:
+ *       - ApiKeyAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -152,8 +172,12 @@ router.get('/lastheard/:id', (req, res) => {
  *               $ref: '#/components/schemas/LastheardEntry'
  *       400:
  *         description: Invalid request
+ *       401:
+ *         description: API key is required
+ *       403:
+ *         description: Invalid or inactive API key
  */
-router.post('/lastheard', (req, res) => {
+router.post('/lastheard', authenticateApiKey, (req, res) => {
   try {
     const { callsign, dmr_id, timestamp, talkgroup, timeslot, duration, reflector } = req.body;
     
@@ -182,6 +206,8 @@ router.post('/lastheard', (req, res) => {
  *   get:
  *     summary: Get lastheard entries by callsign
  *     description: Retrieve lastheard entries for a specific callsign
+ *     security:
+ *       - ApiKeyAuth: []
  *     parameters:
  *       - in: path
  *         name: callsign
@@ -204,8 +230,12 @@ router.post('/lastheard', (req, res) => {
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/LastheardEntry'
+ *       401:
+ *         description: API key is required
+ *       403:
+ *         description: Invalid or inactive API key
  */
-router.get('/lastheard/callsign/:callsign', (req, res) => {
+router.get('/lastheard/callsign/:callsign', authenticateApiKey, (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
     const stmt = db.prepare('SELECT * FROM lastheard WHERE callsign = ? ORDER BY timestamp DESC LIMIT ?');

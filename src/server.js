@@ -3,6 +3,7 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 const { initDatabase } = require('./db/database');
 const lastheardRoutes = require('./routes/lastheard');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,7 +18,10 @@ initDatabase();
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// API Routes
+// Auth routes (public, no authentication required)
+app.use('/api/auth', authRoutes);
+
+// API Routes (protected with API key authentication)
 app.use('/api', lastheardRoutes);
 
 // Root endpoint

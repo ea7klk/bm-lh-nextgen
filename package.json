@@ -8,13 +8,20 @@
     "dev": "node src/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["brandmeister", "lastheard", "dmr", "api"],
+  "keywords": [
+    "brandmeister",
+    "lastheard",
+    "dmr",
+    "api"
+  ],
   "author": "EA7KLK",
   "license": "MIT",
   "dependencies": {
     "better-sqlite3": "^12.4.1",
     "express": "^5.1.0",
+    "nodemailer": "^7.0.9",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^13.0.0"
   }
 }
