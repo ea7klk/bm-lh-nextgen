@@ -131,13 +131,16 @@ The application uses SQLite for data storage. The database file is automatically
 
 The `lastheard` table includes:
 - `id` - Unique identifier
-- `callsign` - Amateur radio callsign
-- `dmr_id` - DMR ID
-- `timestamp` - Unix timestamp
-- `talkgroup` - Talkgroup number
-- `timeslot` - Timeslot (1 or 2)
+- `SourceID` - Source DMR ID
+- `DestinationID` - Destination ID (talkgroup)
+- `SourceCall` - Source callsign
+- `SourceName` - Source name
+- `DestinationCall` - Destination callsign
+- `DestinationName` - Destination name
+- `Start` - Start timestamp (Unix)
+- `Stop` - Stop timestamp (Unix)
+- `TalkerAlias` - Talker alias
 - `duration` - Duration in seconds
-- `reflector` - Reflector name
 - `created_at` - Record creation timestamp
 
 The `api_keys` table includes:
