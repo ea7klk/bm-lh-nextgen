@@ -18,27 +18,36 @@ const { authenticateApiKey } = require('../middleware/auth');
  *         id:
  *           type: integer
  *           description: Unique identifier
- *         callsign:
+ *         SourceID:
+ *           type: integer
+ *           description: Source DMR ID
+ *         DestinationID:
+ *           type: integer
+ *           description: Destination ID (talkgroup)
+ *         SourceCall:
  *           type: string
- *           description: Amateur radio callsign
- *         dmr_id:
+ *           description: Source callsign
+ *         SourceName:
+ *           type: string
+ *           description: Source name
+ *         DestinationCall:
+ *           type: string
+ *           description: Destination callsign
+ *         DestinationName:
+ *           type: string
+ *           description: Destination name
+ *         Start:
  *           type: integer
- *           description: DMR ID
- *         timestamp:
+ *           description: Start timestamp (Unix)
+ *         Stop:
  *           type: integer
- *           description: Unix timestamp
- *         talkgroup:
- *           type: integer
- *           description: Talkgroup number
- *         timeslot:
- *           type: integer
- *           description: Timeslot (1 or 2)
+ *           description: Stop timestamp (Unix)
+ *         TalkerAlias:
+ *           type: string
+ *           description: Talker alias
  *         duration:
  *           type: integer
  *           description: Duration in seconds
- *         reflector:
- *           type: string
- *           description: Reflector name
  *         created_at:
  *           type: integer
  *           description: Record creation timestamp
@@ -76,7 +85,7 @@ const { authenticateApiKey } = require('../middleware/auth');
 router.get('/lastheard', authenticateApiKey, (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
-    const stmt = db.prepare('SELECT * FROM lastheard ORDER BY timestamp DESC LIMIT ?');
+    const stmt = db.prepare('SELECT * FROM lastheard ORDER BY Start DESC LIMIT ?');
     const entries = stmt.all(limit);
     res.json(entries);
   } catch (error) {
@@ -143,26 +152,31 @@ router.get('/lastheard/:id', authenticateApiKey, (req, res) => {
  *           schema:
  *             type: object
  *             required:
- *               - callsign
- *               - dmr_id
- *               - timestamp
- *               - talkgroup
- *               - timeslot
+ *               - SourceID
+ *               - DestinationID
+ *               - SourceCall
+ *               - Start
  *             properties:
- *               callsign:
+ *               SourceID:
+ *                 type: integer
+ *               DestinationID:
+ *                 type: integer
+ *               SourceCall:
  *                 type: string
- *               dmr_id:
+ *               SourceName:
+ *                 type: string
+ *               DestinationCall:
+ *                 type: string
+ *               DestinationName:
+ *                 type: string
+ *               Start:
  *                 type: integer
- *               timestamp:
+ *               Stop:
  *                 type: integer
- *               talkgroup:
- *                 type: integer
- *               timeslot:
- *                 type: integer
+ *               TalkerAlias:
+ *                 type: string
  *               duration:
  *                 type: integer
- *               reflector:
- *                 type: string
  *     responses:
  *       201:
  *         description: Entry created successfully
@@ -179,18 +193,18 @@ router.get('/lastheard/:id', authenticateApiKey, (req, res) => {
  */
 router.post('/lastheard', authenticateApiKey, (req, res) => {
   try {
-    const { callsign, dmr_id, timestamp, talkgroup, timeslot, duration, reflector } = req.body;
+    const { SourceID, DestinationID, SourceCall, SourceName, DestinationCall, DestinationName, Start, Stop, TalkerAlias, duration } = req.body;
     
-    if (!callsign || !dmr_id || !timestamp || !talkgroup || !timeslot) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!SourceID || !DestinationID || !SourceCall || !Start) {
+      return res.status(400).json({ error: 'Missing required fields: SourceID, DestinationID, SourceCall, Start' });
     }
     
     const stmt = db.prepare(`
-      INSERT INTO lastheard (callsign, dmr_id, timestamp, talkgroup, timeslot, duration, reflector)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO lastheard (SourceID, DestinationID, SourceCall, SourceName, DestinationCall, DestinationName, Start, Stop, TalkerAlias, duration)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
-    const result = stmt.run(callsign, dmr_id, timestamp, talkgroup, timeslot, duration || null, reflector || null);
+    const result = stmt.run(SourceID, DestinationID, SourceCall, SourceName || null, DestinationCall || null, DestinationName || null, Start, Stop || null, TalkerAlias || null, duration || null);
     
     const newEntry = db.prepare('SELECT * FROM lastheard WHERE id = ?').get(result.lastInsertRowid);
     
@@ -238,7 +252,7 @@ router.post('/lastheard', authenticateApiKey, (req, res) => {
 router.get('/lastheard/callsign/:callsign', authenticateApiKey, (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
-    const stmt = db.prepare('SELECT * FROM lastheard WHERE callsign = ? ORDER BY timestamp DESC LIMIT ?');
+    const stmt = db.prepare('SELECT * FROM lastheard WHERE SourceCall = ? ORDER BY Start DESC LIMIT ?');
     const entries = stmt.all(req.params.callsign, limit);
     res.json(entries);
   } catch (error) {
