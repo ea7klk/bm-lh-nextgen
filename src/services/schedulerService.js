@@ -182,4 +182,5 @@ module.exports = {
   checkApiKeyExpiry,
   cleanupOldRecords,
   runTalkgroupsUpdate,
+  initializeTalkgroups,
 };

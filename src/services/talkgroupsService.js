@@ -1,5 +1,4 @@
 const https = require('https');
-const { parse } = require('csv-parse/sync');
 const { db } = require('../db/database');
 
 // Country code to full country name mapping
@@ -349,6 +348,35 @@ const COUNTRY_TO_CONTINENT = {
   'NE': 'Africa',
 };
 
+// Fetch JSON data from a URL using https
+function fetchJSON(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, (res) => {
+      let data = '';
+
+      if (res.statusCode !== 200) {
+        reject(new Error(`Failed to fetch JSON: ${res.statusCode}`));
+        return;
+      }
+
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      res.on('end', () => {
+        try {
+          const jsonData = JSON.parse(data);
+          resolve(jsonData);
+        } catch (parseError) {
+          reject(new Error(`Failed to parse JSON: ${parseError.message}`));
+        }
+      });
+    }).on('error', (err) => {
+      reject(err);
+    });
+  });
+}
+
 // Fetch CSV data from a URL using https
 function fetchCSV(url) {
   return new Promise((resolve, reject) => {
@@ -373,34 +401,39 @@ function fetchCSV(url) {
   });
 }
 
-// Update talkgroups from Brandmeister CSV
+// Update talkgroups from Brandmeister JSON API
 async function updateTalkgroups() {
   console.log('Updating talkgroups from Brandmeister...');
 
   try {
-    // Fetch CSV data from Brandmeister
-    // The CSV URL is typically at https://brandmeister.network/talkgroups.csv
-    // However, since we can't access it directly, we'll try common patterns
-    const csvUrl = 'https://brandmeister.network/talkgroups.csv';
+    // Fetch talkgroups data from Brandmeister JSON API
+    const jsonUrl = 'https://api.brandmeister.network/v2/talkgroup';
     
-    let csvData;
+    let talkgroupsData;
     try {
-      csvData = await fetchCSV(csvUrl);
+      talkgroupsData = await fetchJSON(jsonUrl);
     } catch (fetchError) {
-      console.error('Failed to fetch from primary URL, trying alternative...');
-      // Try alternative URL pattern
-      const altUrl = 'https://api.brandmeister.network/v2/talkgroups/csv';
-      csvData = await fetchCSV(altUrl);
+      console.error('Failed to fetch talkgroups from JSON API:', fetchError.message);
+      throw fetchError;
     }
 
-    // Parse CSV data
-    const records = parse(csvData, {
-      columns: true,
-      skip_empty_lines: true,
-      trim: true,
-    });
+    // Convert JSON object to array of records
+    const records = [];
+    for (const [talkgroupId, name] of Object.entries(talkgroupsData)) {
+      // Skip invalid talkgroup IDs or names
+      const id = parseInt(talkgroupId);
+      if (!id || isNaN(id) || !name || typeof name !== 'string') {
+        continue;
+      }
+      
+      records.push({
+        id: id,
+        name: name.trim(),
+        talkgroup_id: id
+      });
+    }
 
-    console.log(`Parsed ${records.length} talkgroups from CSV`);
+    console.log(`Parsed ${records.length} talkgroups from JSON API`);
 
     // Begin transaction for better performance
     const insertStmt = db.prepare(`
@@ -411,15 +444,50 @@ async function updateTalkgroups() {
 
     const transaction = db.transaction((talkgroups) => {
       for (const tg of talkgroups) {
-        // Extract talkgroup data
-        // CSV columns may vary, but typically include: id, name, country
-        const talkgroupId = parseInt(tg.id || tg.talkgroup_id || tg.TalkgroupID);
-        const name = tg.name || tg.Name || '';
-        const country = tg.country || tg.Country || tg.callsign || '';
-
-        // Skip invalid records
-        if (!talkgroupId || isNaN(talkgroupId)) {
-          continue;
+        // Extract talkgroup data from JSON format
+        const talkgroupId = tg.id;
+        const name = tg.name || '';
+        
+        // Determine country from talkgroup ID
+        let country = 'Global';
+        
+        // Apply Brandmeister talkgroup numbering scheme logic
+        if (talkgroupId >= 1 && talkgroupId <= 99) {
+          // System talkgroups (1-99)
+          country = 'Global';
+        } else if (talkgroupId >= 900 && talkgroupId <= 999) {
+          // Worldwide talkgroups (900-999)
+          country = 'Global';
+        } else if (talkgroupId >= 8000 && talkgroupId <= 8999) {
+          // Regional talkgroups (8000-8999)
+          country = 'Global';
+        } else if (talkgroupId >= 9000 && talkgroupId <= 9999) {
+          // Worldwide talkgroups (9000-9999)
+          country = 'Global';
+        } else {
+          // Country-specific talkgroups
+          const tgString = talkgroupId.toString();
+          if (tgString.length >= 3) {
+            // Extract country code from first 3 digits for country-specific talkgroups
+            const countryCode = tgString.substring(0, 3);
+            
+            // Map common country codes
+            const countryMappings = {
+              '202': 'GR', '204': 'NL', '206': 'BE', '208': 'FR', '214': 'ES',
+              '216': 'HU', '218': 'BA', '219': 'HR', '220': 'RS', '222': 'IT',
+              '226': 'RO', '228': 'CH', '230': 'CZ', '231': 'SK', '232': 'AT',
+              '235': 'GB', '238': 'DK', '240': 'SE', '242': 'NO', '244': 'FI',
+              '246': 'LT', '247': 'LV', '248': 'EE', '262': 'DE', '268': 'PT',
+              '270': 'LU', '272': 'IE', '274': 'IS', '302': 'CA', '310': 'US',
+              '311': 'US', '312': 'US', '313': 'US', '314': 'US', '315': 'US',
+              '316': 'US', '317': 'US', '318': 'US', '319': 'US', '334': 'MX',
+              '440': 'JP', '450': 'KR', '454': 'HK', '460': 'CN', '505': 'AU',
+              '510': 'ID', '520': 'TH', '525': 'SG', '530': 'NZ', '655': 'ZA',
+              '724': 'BR', '730': 'CL', '732': 'CO', '734': 'VE'
+            };
+            
+            country = countryMappings[countryCode] || 'Unknown';
+          }
         }
 
         // Get full country name and continent
