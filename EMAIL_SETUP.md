@@ -108,6 +108,23 @@ EMAIL_FROM=noreply@yourdomain.com
 2. Check if email provider supports the encryption method
 3. For development, you can disable certificate verification (already configured)
 
+### AUTH PLAIN Failures
+
+**Cause:** SMTP server requires STARTTLS before authentication
+
+**Solutions:**
+1. Set `EMAIL_REQUIRE_TLS=true` in your `.env` file
+2. Ensure you're using port 587 (STARTTLS port) not 465 (SSL port)
+3. Verify your SMTP server supports STARTTLS
+
+Example configuration for servers requiring STARTTLS:
+```bash
+EMAIL_HOST=mail.example.com
+EMAIL_PORT=587
+EMAIL_SECURE=false
+EMAIL_REQUIRE_TLS=true
+```
+
 ## Testing Email Configuration
 
 You can test your email configuration by creating a simple test script:
@@ -141,6 +158,33 @@ test();
 | `EMAIL_PASSWORD` | Email password/app password | `` |
 | `EMAIL_FROM` | From address for outgoing emails | `noreply@example.com` |
 | `BASE_URL` | Base URL for email links | `http://localhost:3000` |
+| `EMAIL_SECURE` | Use direct SSL/TLS connection (true/false) | Auto-detected based on port (true for 465, false otherwise) |
+| `EMAIL_REQUIRE_TLS` | Require STARTTLS before authentication (true/false) | `false` |
+
+### Email Security Settings
+
+**EMAIL_SECURE**: Controls whether to use a direct SSL/TLS connection or start with a plain connection.
+- Set to `true` for port 465 (direct SSL/TLS)
+- Set to `false` for port 587 (STARTTLS)
+- If not set, automatically determined based on the port
+
+**EMAIL_REQUIRE_TLS**: Forces the use of STARTTLS for non-secure connections.
+- Set to `true` if your SMTP server requires STARTTLS before authentication
+- This is useful when the server rejects AUTH PLAIN without STARTTLS
+- Default is `false`
+
+### When to Use EMAIL_REQUIRE_TLS
+
+If you see errors like:
+- `Failed during: AUTH PLAIN`
+- `AUTH command failed`
+- `Must issue a STARTTLS command first`
+
+Try setting `EMAIL_REQUIRE_TLS=true` in your `.env` file:
+
+```bash
+EMAIL_REQUIRE_TLS=true
+```
 
 ## Troubleshooting
 

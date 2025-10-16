@@ -21,7 +21,9 @@ async function runEmailTest() {
   console.log(`  Port: ${process.env.EMAIL_PORT || 'Not set'}`);
   console.log(`  User: ${process.env.EMAIL_USER || 'Not set'}`);
   console.log(`  Password: ${process.env.EMAIL_PASSWORD ? '***SET***' : 'Not set'}`);
-  console.log(`  From: ${process.env.EMAIL_FROM || 'Not set'}\n`);
+  console.log(`  From: ${process.env.EMAIL_FROM || 'Not set'}`);
+  console.log(`  Secure (SSL/TLS): ${process.env.EMAIL_SECURE !== undefined ? process.env.EMAIL_SECURE : 'Auto (based on port)'}`);
+  console.log(`  Require TLS (STARTTLS): ${process.env.EMAIL_REQUIRE_TLS || 'false'}\n`);
   
   // Test the configuration
   const result = await testEmailConfig();
