@@ -143,3 +143,6 @@ vite.config.ts.timestamp-*
 data/*.db
 data/*.db-shm
 data/*.db-wal
+
+# Test scripts
+test-scheduler.js

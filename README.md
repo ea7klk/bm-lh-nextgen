@@ -11,6 +11,11 @@ A Node.js REST API with Swagger documentation for tracking Brandmeister DMR radi
 - Endpoints for managing lastheard entries
 - API key authentication with email verification
 - Configurable email notifications
+- **Styled email confirmation pages**
+- **Professional HTML email templates**
+- **API key expiration (365 days)**
+- **Automated expiry reminders (30, 15, 5 days before expiry)**
+- **Automatic cleanup of expired API keys**
 
 ## Prerequisites
 
@@ -82,6 +87,20 @@ The API uses API key authentication. To use the API endpoints:
    curl -H "X-API-Key: your-api-key-here" http://localhost:3000/api/lastheard
    ```
 
+## API Key Expiration
+
+API keys automatically expire after 365 days. The system provides:
+
+- **Expiry Reminders:** Email notifications are sent 30, 15, and 5 days before expiration
+- **Automatic Cleanup:** Expired keys are automatically deactivated by the scheduler
+- **Grace Period:** Request a new key before expiration to avoid service interruption
+- **Expiry Check:** The authentication middleware validates expiry on each request
+
+The scheduler runs daily to:
+1. Send expiry reminder emails to users
+2. Deactivate API keys that have expired
+3. Maintain system security by removing stale credentials
+
 ## API Documentation
 
 Once the server is running, access the interactive Swagger documentation at:
@@ -128,6 +147,7 @@ The `api_keys` table includes:
 - `email` - User's email
 - `is_active` - Active status
 - `created_at` - Creation timestamp
+- `expires_at` - Expiration timestamp (365 days from creation)
 
 The `email_verifications` table includes:
 - `id` - Unique identifier
@@ -153,10 +173,12 @@ bm-lh-nextgen/
 │   │   ├── auth.js          # Authentication routes
 │   │   └── lastheard.js     # API routes
 │   ├── services/
-│   │   └── emailService.js  # Email service
+│   │   ├── emailService.js  # Email service
+│   │   └── schedulerService.js  # Expiry scheduler
 │   └── server.js            # Main server file
 ├── data/                    # SQLite database directory
 ├── .env.example             # Environment variables template
+├── EMAIL_TEMPLATES.md       # Email templates documentation
 ├── package.json
 └── README.md
 ```
