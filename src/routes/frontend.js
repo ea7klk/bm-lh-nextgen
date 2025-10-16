@@ -104,7 +104,7 @@ router.get('/', (req, res) => {
             max-height: 500px;
             overflow-x: auto;
             overflow-y: visible;
-            padding: 20px 10px 120px 10px;
+            padding: 20px 10px 80px 10px;
         }
         .bar-item {
             display: flex;
@@ -137,8 +137,8 @@ router.get('/', (req, res) => {
             text-align: left;
             transform: rotate(-45deg);
             transform-origin: top left;
-            margin-top: 10px;
-            margin-left: 20px;
+            margin-top: 25px;
+            margin-left: 5px;
             max-width: 150px;
             overflow: hidden;
             text-overflow: ellipsis;
