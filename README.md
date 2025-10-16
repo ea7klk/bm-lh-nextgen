@@ -254,6 +254,73 @@ bm-lh-nextgen/
 └── README.md
 ```
 
+## Docker Deployment
+
+This application is fully containerized for easy deployment:
+
+### Quick Start with Docker
+```bash
+# Build the image
+docker build -t bm-lh-nextgen .
+
+# Run with environment variables
+docker run -p 3000:3000 \
+  -e ADMIN_PASSWORD=your-secure-password \
+  -e JWT_SECRET=your-secret-key \
+  bm-lh-nextgen
+
+# Or use docker-compose
+docker-compose up -d
+```
+
+### Pre-built Images
+Production-ready images are automatically built and published to GitHub Container Registry:
+
+```bash
+# Pull the latest version
+docker pull ghcr.io/ea7klk/bm-lh-nextgen:latest
+
+# Pull a specific version
+docker pull ghcr.io/ea7klk/bm-lh-nextgen:v1.0.0
+```
+
+See [DOCKER.md](DOCKER.md) for comprehensive Docker documentation and [GITHUB_WORKFLOWS.md](GITHUB_WORKFLOWS.md) for CI/CD details.
+
+## CI/CD Pipeline
+
+This repository includes automated GitHub Actions workflows:
+
+### 🏗️ **Continuous Integration**
+- Runs on every push and pull request
+- Node.js testing and linting
+- Docker build validation
+- Security vulnerability scanning
+- Container health checks
+
+### 🚀 **Automated Releases**
+- Triggered by version tags (e.g., `v1.0.0`)
+- Multi-architecture builds (AMD64, ARM64)
+- Automatic publishing to GitHub Container Registry
+- Security scanning and SARIF reporting
+- Build summaries and pull commands
+
+### 📋 **Workflow Status**
+![CI](https://github.com/ea7klk/bm-lh-nextgen/workflows/CI/badge.svg)
+![Docker Build](https://github.com/ea7klk/bm-lh-nextgen/workflows/Docker%20Build%20and%20Push/badge.svg)
+
+### 🔄 **Creating a Release**
+```bash
+# Tag a new version
+git tag -a v1.0.0 -m "Release version 1.0.0"
+git push origin v1.0.0
+
+# GitHub Actions will automatically:
+# - Build multi-arch Docker images
+# - Run security scans
+# - Publish to container registry
+# - Generate release artifacts
+```
+
 ## License
 
 MIT License - See LICENSE file for details

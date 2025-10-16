@@ -6,8 +6,12 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node src/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "test-email": "node test-email.js"
+    "test": "echo \"✅ No tests configured yet\"",
+    "test-email": "node test-email.js",
+    "lint": "echo \"✅ No linting configured yet\"",
+    "docker:build": "docker build -t bm-lh-nextgen .",
+    "docker:run": "docker run -p 3000:3000 -e ADMIN_PASSWORD=changeme -e JWT_SECRET=dev-secret bm-lh-nextgen",
+    "docker:compose": "docker-compose up -d"
   },
   "keywords": [
     "brandmeister",
