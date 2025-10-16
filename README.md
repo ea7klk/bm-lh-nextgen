@@ -191,6 +191,17 @@ The `email_verifications` table includes:
 - `created_at` - Creation timestamp
 - `expires_at` - Expiration timestamp
 
+The `talkgroups` table includes:
+- `id` - Unique identifier
+- `talkgroup_id` - Talkgroup ID number
+- `name` - Talkgroup name
+- `country` - Country code (2-letter ISO code or "Global")
+- `continent` - Full continent name (or "Global" for worldwide talkgroups)
+- `full_country_name` - Full country name
+- `last_updated` - Last update timestamp
+
+**Note:** The talkgroups table is automatically populated and updated daily at 02:00 AM from the Brandmeister network talkgroups CSV data.
+
 ## Project Structure
 
 ```
