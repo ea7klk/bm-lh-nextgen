@@ -86,13 +86,40 @@ async function checkApiKeyExpiry() {
   }
 }
 
+// Initialize talkgroups table on startup
+async function initializeTalkgroups() {
+  try {
+    // Check if talkgroups table has any data
+    const countStmt = db.prepare('SELECT COUNT(*) as count FROM talkgroups');
+    const result = countStmt.get();
+    
+    if (result.count === 0) {
+      console.log('Talkgroups table is empty. Populating now...');
+      const updateResult = await updateTalkgroups();
+      
+      if (updateResult.success) {
+        console.log(`Initial talkgroups population completed. Added ${updateResult.count} records.`);
+      } else {
+        console.error('Failed to populate talkgroups on startup:', updateResult.error);
+      }
+    } else {
+      console.log(`Talkgroups table already contains ${result.count} records. Skipping initial population.`);
+    }
+  } catch (error) {
+    console.error('Error checking talkgroups table:', error);
+  }
+}
+
 // Start the scheduler
-function startScheduler() {
+async function startScheduler() {
   console.log('Starting scheduler...');
   
   // Run immediately on startup
   checkApiKeyExpiry();
   cleanupOldRecords();
+  
+  // Check if talkgroups table is empty and populate if needed
+  await initializeTalkgroups();
   
   // Schedule talkgroups update at 02:00 daily
   scheduleAt2AM();
