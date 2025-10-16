@@ -2,15 +2,16 @@
 
 ## ✅ Issue Resolved
 
-The email authentication error has been fixed with the following improvements:
+The email sending issues have been fixed with the following improvements:
 
 ### 🔧 Changes Made
 
 1. **Enhanced Email Service (`src/services/emailService.js`)**
    - Added configuration validation
    - Improved error handling with specific error messages
-   - Added connection testing before sending emails
+   - **Removed blocking `verify()` calls before email sends** - Some SMTP servers don't properly support the EHLO command used by verify(), causing it to fail even when credentials are correct
    - Better support for different email providers (Gmail, Outlook, Yahoo)
+   - Connection testing is now only used in the dedicated `testEmailConfig()` function
 
 2. **Environment Configuration**
    - Created `.env` file with sample configurations for popular email providers
@@ -54,18 +55,21 @@ The email authentication error has been fixed with the following improvements:
    - Generate an app password for "Mail"
    - Use this 16-character password in your `.env` file
 
-### 🔍 What Fixed the Original Error
+### 🔍 What Fixed the Email Issues
 
-The original error `535 5.7.8 Error: authentication failed` was caused by:
+Email sending failures can be caused by:
 - Missing or incorrect email credentials
 - Using default/placeholder values in configuration
-- Lack of proper error handling
+- **Blocking `verify()` calls that fail even when credentials are correct**
+- SMTP servers that don't properly support connection verification
 
 The fixes include:
 - Proper environment variable loading
 - Configuration validation
+- **Removed blocking `verify()` calls from email send functions** - The `sendMail()` method handles its own connection and authentication
 - Better error messages that guide you to the solution
 - Support for different email providers with correct settings
+- Dedicated `testEmailConfig()` function for testing configuration separately
 
 ### 🧪 Verification
 
