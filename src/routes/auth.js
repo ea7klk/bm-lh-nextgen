@@ -140,7 +140,78 @@ router.get('/verify-email', async (req, res) => {
     const { token } = req.query;
 
     if (!token) {
-      return res.status(400).json({ error: 'Verification token is required' });
+      return res.status(400).send(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verification Error - Brandmeister Lastheard Next Generation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        .error-icon { color: #dc3545; }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .back-link:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon error-icon">⚠️</div>
+        <h1>Verification Error</h1>
+        <p>Verification token is required</p>
+        <a href="/api/auth/request-key" class="back-link">Request New API Key</a>
+    </div>
+</body>
+</html>
+      `);
     }
 
     // Find verification record
@@ -149,33 +220,254 @@ router.get('/verify-email', async (req, res) => {
     ).get(token);
 
     if (!verification) {
-      return res.status(400).json({ error: 'Invalid verification token' });
+      return res.status(400).send(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invalid Token - Brandmeister Lastheard Next Generation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        .error-icon { color: #dc3545; }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .back-link:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon error-icon">❌</div>
+        <h1>Invalid Verification Token</h1>
+        <p>The verification token is invalid or does not exist.</p>
+        <a href="/api/auth/request-key" class="back-link">Request New API Key</a>
+    </div>
+</body>
+</html>
+      `);
     }
 
     if (verification.is_verified) {
-      return res.status(400).json({ 
-        error: 'This email has already been verified',
-        message: 'Check your email for the API key'
-      });
+      return res.status(400).send(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Already Verified - Brandmeister Lastheard Next Generation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        .warning-icon { color: #ffc107; }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .info-box {
+            background: #e7f3ff;
+            padding: 16px;
+            border-radius: 6px;
+            margin-top: 20px;
+            border-left: 4px solid #667eea;
+        }
+        .info-box p {
+            margin: 0;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .back-link:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon warning-icon">ℹ️</div>
+        <h1>Already Verified</h1>
+        <p>This email has already been verified.</p>
+        <div class="info-box">
+            <p><strong>Check your email for your API key</strong></p>
+        </div>
+        <a href="/" class="back-link">Go to API Home</a>
+    </div>
+</body>
+</html>
+      `);
     }
 
     const currentTime = Math.floor(Date.now() / 1000);
     if (verification.expires_at < currentTime) {
-      return res.status(400).json({ 
-        error: 'Verification token has expired',
-        message: 'Please request a new API key at /api/auth/request-key'
-      });
+      return res.status(400).send(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Expired - Brandmeister Lastheard Next Generation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        .warning-icon { color: #ffc107; }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .back-link:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon warning-icon">⏱️</div>
+        <h1>Verification Token Expired</h1>
+        <p>This verification token has expired. Please request a new API key.</p>
+        <a href="/api/auth/request-key" class="back-link">Request New API Key</a>
+    </div>
+</body>
+</html>
+      `);
     }
 
     // Generate API key
     const apiKey = uuidv4();
+    const expiresAt = Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60); // 365 days from now
 
     // Insert API key
     const insertStmt = db.prepare(`
-      INSERT INTO api_keys (api_key, name, email)
-      VALUES (?, ?, ?)
+      INSERT INTO api_keys (api_key, name, email, expires_at)
+      VALUES (?, ?, ?, ?)
     `);
-    insertStmt.run(apiKey, verification.name, verification.email);
+    insertStmt.run(apiKey, verification.name, verification.email, expiresAt);
 
     // Mark verification as complete
     const updateStmt = db.prepare(
@@ -190,14 +482,300 @@ router.get('/verify-email', async (req, res) => {
       console.error('Failed to send API key email, but key was created');
     }
 
-    res.json({ 
-      message: 'Email verified successfully! Your API key has been sent to your email.',
-      apiKey: apiKey,
-      note: 'Please save this API key securely. Include it in the X-API-Key header for API requests.'
+    // Calculate expiry date for display
+    const expiryDate = new Date(expiresAt * 1000).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
     });
+
+    res.send(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verified - Brandmeister Lastheard Next Generation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .success-icon { color: #28a745; }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+            text-align: center;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+            text-align: center;
+        }
+        .api-key-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 2px dashed #667eea;
+        }
+        .api-key-label {
+            color: #666;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .api-key {
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            color: #333;
+            word-break: break-all;
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+        .copy-btn {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .copy-btn:hover {
+            background: #5568d3;
+        }
+        .copy-btn.copied {
+            background: #28a745;
+        }
+        .info {
+            background: #e7f3ff;
+            padding: 16px;
+            border-radius: 6px;
+            margin-top: 20px;
+            border-left: 4px solid #667eea;
+        }
+        .info p {
+            color: #333;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+        .info p:last-child {
+            margin-bottom: 0;
+        }
+        .info strong {
+            color: #667eea;
+        }
+        .warning {
+            background: #fff3cd;
+            padding: 16px;
+            border-radius: 6px;
+            margin-top: 20px;
+            border-left: 4px solid #ffc107;
+        }
+        .warning p {
+            color: #856404;
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .expiry-info {
+            background: #f0f0f0;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 10px;
+            text-align: center;
+        }
+        .expiry-info p {
+            color: #666;
+            font-size: 14px;
+            margin: 0;
+        }
+        .example {
+            background: #2d2d2d;
+            padding: 16px;
+            border-radius: 6px;
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+        .example code {
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            display: block;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon success-icon">✅</div>
+        <h1>Email Verified Successfully!</h1>
+        <p class="subtitle">Your API key has been generated and sent to your email</p>
+        
+        <div class="api-key-box">
+            <div class="api-key-label">YOUR API KEY</div>
+            <div class="api-key" id="apiKey">${apiKey}</div>
+            <button class="copy-btn" id="copyBtn" onclick="copyApiKey()">Copy to Clipboard</button>
+        </div>
+
+        <div class="expiry-info">
+            <p><strong>Valid until:</strong> ${expiryDate}</p>
+        </div>
+        
+        <div class="warning">
+            <p><strong>⚠️ Important:</strong> Please save this API key securely. You will need it to access the API. We've also sent it to your email for safekeeping.</p>
+        </div>
+        
+        <div class="info">
+            <p><strong>How to use your API key:</strong></p>
+            <p>Include your API key in the <code>X-API-Key</code> header with all API requests.</p>
+        </div>
+        
+        <div class="example">
+            <code>curl -H "X-API-Key: ${apiKey}" \\
+     ${process.env.BASE_URL || 'http://localhost:3000'}/api/lastheard</code>
+        </div>
+        
+        <a href="/" class="back-link">← Go to API Home</a>
+    </div>
+
+    <script>
+        function copyApiKey() {
+            const apiKey = document.getElementById('apiKey').textContent;
+            const btn = document.getElementById('copyBtn');
+            
+            navigator.clipboard.writeText(apiKey).then(() => {
+                btn.textContent = '✓ Copied!';
+                btn.classList.add('copied');
+                
+                setTimeout(() => {
+                    btn.textContent = 'Copy to Clipboard';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+    </script>
+</body>
+</html>
+    `);
   } catch (error) {
     console.error('Error in verify-email:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).send(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Error - Brandmeister Lastheard Next Generation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        .error-icon { color: #dc3545; }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .back-link:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon error-icon">💥</div>
+        <h1>Internal Server Error</h1>
+        <p>We're sorry, something went wrong. Please try again later.</p>
+        <a href="/api/auth/request-key" class="back-link">Request New API Key</a>
+    </div>
+</body>
+</html>
+    `);
   }
 });
 
