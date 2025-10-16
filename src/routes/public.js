@@ -71,7 +71,7 @@ router.get('/lastheard/grouped', (req, res) => {
     let whereClause = 'WHERE Start >= ?';
     const params = [startTime];
     
-    if (continent && continent !== 'Global') {
+    if (continent && continent !== 'All') {
       whereClause += ' AND DestinationID IN (SELECT talkgroup_id FROM talkgroups WHERE continent = ?)';
       params.push(continent);
       
@@ -80,7 +80,7 @@ router.get('/lastheard/grouped', (req, res) => {
         params.push(country);
       }
     }
-    // Don't filter when Global is selected - show all talkgroups
+    // When continent is 'All' or not specified, show all talkgroups
     
     // Group by talkgroup and get count and total duration
     const query = `
@@ -218,7 +218,8 @@ router.get('/continents', (req, res) => {
   try {
     const stmt = db.prepare('SELECT DISTINCT continent FROM talkgroups WHERE continent IS NOT NULL ORDER BY continent');
     const continents = stmt.all().map(row => row.continent);
-    res.json(['Global', ...continents]);
+    // Return all continents (including Global) - the frontend will add "All" option
+    res.json(continents);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -246,7 +247,7 @@ router.get('/continents', (req, res) => {
 router.get('/countries', (req, res) => {
   try {
     const continent = req.query.continent;
-    if (!continent || continent === 'Global') {
+    if (!continent || continent === 'All' || continent === 'Global') {
       return res.json([]);
     }
     

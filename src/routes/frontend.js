@@ -61,7 +61,7 @@ router.get('/', (req, res) => {
         .control-group {
             display: flex;
             flex-direction: column;
-            min-width: 150px;
+            min-width: 120px;
         }
         .control-group label {
             font-size: 12px;
@@ -97,45 +97,58 @@ router.get('/', (req, res) => {
         }
         .bar-chart {
             display: flex;
-            flex-direction: column;
-            gap: 10px;
-            max-height: 400px;
-            overflow-y: auto;
+            flex-direction: row;
+            gap: 15px;
+            align-items: flex-end;
+            justify-content: center;
+            max-height: 500px;
+            overflow-x: auto;
+            overflow-y: visible;
+            padding: 20px 10px 100px 10px;
         }
         .bar-item {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 10px;
-        }
-        .bar-label {
-            min-width: 150px;
-            font-size: 14px;
-            color: #333;
-            text-align: right;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            min-width: 80px;
+            max-width: 120px;
         }
         .bar-container {
-            flex: 1;
-            height: 30px;
+            width: 60px;
+            min-height: 30px;
+            max-height: 400px;
             background: #f0f0f0;
             border-radius: 4px;
             position: relative;
-            overflow: hidden;
+            overflow: visible;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
         }
         .bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, rgba(102, 126, 234, 0.8), rgba(102, 126, 234, 0.6));
+            width: 100%;
+            background: linear-gradient(180deg, rgba(102, 126, 234, 0.8), rgba(102, 126, 234, 0.6));
             border-radius: 4px;
-            transition: width 0.3s ease;
+            transition: height 0.3s ease;
+        }
+        .bar-label {
+            font-size: 12px;
+            color: #333;
+            text-align: center;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            margin-top: 10px;
+            max-height: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         .bar-value {
-            min-width: 50px;
-            font-size: 14px;
+            font-size: 12px;
             color: #666;
             font-weight: 600;
-            text-align: right;
+            text-align: center;
+            margin-bottom: 5px;
         }
         .table-container {
             background: white;
@@ -246,18 +259,38 @@ router.get('/', (req, res) => {
             <div class="control-group">
                 <label for="continent">Continent</label>
                 <select id="continent">
+                    <option value="All">All</option>
                     <option value="Global">Global</option>
                 </select>
             </div>
             <div class="control-group" id="countryGroup" style="display: none;">
                 <label for="country">Country</label>
-                <select id="country"></select>
+                <select id="country">
+                    <option value="">All</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="maxEntries">Maximum Entries</label>
+                <select id="maxEntries">
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                    <option value="25" selected>25</option>
+                    <option value="30">30</option>
+                </select>
             </div>
         </div>
 
         <div class="chart-container">
-            <div class="chart-title">Destination Name Distribution</div>
+            <div class="chart-title">Talkgroup total QSO statistics</div>
             <div class="bar-chart" id="barChart">
+                <div style="text-align: center; color: #666; padding: 40px;">Loading chart...</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">Talkgroup total QSO duration</div>
+            <div class="bar-chart" id="durationChart">
                 <div style="text-align: center; color: #666; padding: 40px;">Loading chart...</div>
             </div>
         </div>
@@ -305,7 +338,7 @@ router.get('/', (req, res) => {
                 const continents = await response.json();
                 
                 const select = document.getElementById('continent');
-                select.innerHTML = '';
+                select.innerHTML = '<option value="All">All</option>';
                 continents.forEach(continent => {
                     const option = document.createElement('option');
                     option.value = continent;
@@ -319,7 +352,7 @@ router.get('/', (req, res) => {
 
         // Load countries when continent changes
         async function loadCountries(continent) {
-            if (continent === 'Global') {
+            if (continent === 'All' || continent === 'Global') {
                 document.getElementById('countryGroup').style.display = 'none';
                 return;
             }
@@ -329,7 +362,7 @@ router.get('/', (req, res) => {
                 const countries = await response.json();
                 
                 const select = document.getElementById('country');
-                select.innerHTML = '';
+                select.innerHTML = '<option value="">All</option>';
                 
                 if (countries.length > 0) {
                     countries.forEach(country => {
@@ -354,13 +387,18 @@ router.get('/', (req, res) => {
                 const timeRange = document.getElementById('timeRange').value;
                 const continent = document.getElementById('continent').value;
                 const countrySelect = document.getElementById('country');
-                const country = (continent !== 'Global' && countrySelect.options.length > 0) 
+                const country = (continent !== 'All' && continent !== 'Global' && countrySelect.options.length > 1) 
                     ? countrySelect.value 
                     : '';
+                const maxEntries = document.getElementById('maxEntries').value;
                 
-                let url = '/public/lastheard/grouped?timeRange=' + timeRange;
-                if (continent) url += '&continent=' + encodeURIComponent(continent);
-                if (country) url += '&country=' + encodeURIComponent(country);
+                let url = '/public/lastheard/grouped?timeRange=' + timeRange + '&limit=' + maxEntries;
+                if (continent && continent !== 'All') {
+                    url += '&continent=' + encodeURIComponent(continent);
+                }
+                if (country) {
+                    url += '&country=' + encodeURIComponent(country);
+                }
                 
                 const response = await fetch(url);
                 const data = await response.json();
@@ -369,7 +407,7 @@ router.get('/', (req, res) => {
                 
                 if (data.length === 0) {
                     tableBody.innerHTML = '<tr><td colspan="4" class="no-data">No data available for selected time range and filters</td></tr>';
-                    updateChart([], []);
+                    updateChart([], [], []);
                 } else {
                     let html = '';
                     data.forEach(item => {
@@ -382,10 +420,13 @@ router.get('/', (req, res) => {
                     });
                     tableBody.innerHTML = html;
                     
-                    // Update chart
+                    // Update charts
                     const labels = data.map(item => item.destinationName || 'N/A');
+                    const ids = data.map(item => item.destinationId || 'N/A');
                     const counts = data.map(item => item.count || 0);
-                    updateChart(labels, counts);
+                    const durations = data.map(item => item.totalDuration || 0);
+                    updateChart(labels, ids, counts);
+                    updateDurationChart(labels, ids, durations);
                 }
             } catch (error) {
                 console.error('Error loading grouped data:', error);
@@ -394,8 +435,8 @@ router.get('/', (req, res) => {
             }
         }
 
-        // Update chart with CSS bars
-        function updateChart(labels, data) {
+        // Update chart with vertical CSS bars
+        function updateChart(labels, ids, data) {
             const barChart = document.getElementById('barChart');
             
             if (data.length === 0) {
@@ -407,17 +448,48 @@ router.get('/', (req, res) => {
             let html = '';
             
             for (let i = 0; i < Math.min(labels.length, data.length); i++) {
-                const percentage = maxValue > 0 ? (data[i] / maxValue) * 100 : 0;
+                const heightPercentage = maxValue > 0 ? (data[i] / maxValue) * 100 : 0;
+                const heightPx = maxValue > 0 ? (data[i] / maxValue) * 300 : 0;
+                const label = labels[i] + ' (' + ids[i] + ')';
                 html += '<div class="bar-item">' +
-                    '<div class="bar-label" title="' + labels[i] + '">' + labels[i] + '</div>' +
-                    '<div class="bar-container">' +
-                    '<div class="bar-fill" style="width: ' + percentage + '%"></div>' +
-                    '</div>' +
                     '<div class="bar-value">' + data[i] + '</div>' +
+                    '<div class="bar-container" style="height: ' + Math.max(heightPx, 30) + 'px;">' +
+                    '<div class="bar-fill" style="height: 100%"></div>' +
+                    '</div>' +
+                    '<div class="bar-label" title="' + label + '">' + label + '</div>' +
                     '</div>';
             }
             
             barChart.innerHTML = html;
+        }
+
+        // Update duration chart with vertical CSS bars
+        function updateDurationChart(labels, ids, data) {
+            const durationChart = document.getElementById('durationChart');
+            
+            if (data.length === 0) {
+                durationChart.innerHTML = '<div style="text-align: center; color: #666; padding: 40px;">No data to display</div>';
+                return;
+            }
+            
+            const maxValue = Math.max(...data);
+            let html = '';
+            
+            for (let i = 0; i < Math.min(labels.length, data.length); i++) {
+                const heightPercentage = maxValue > 0 ? (data[i] / maxValue) * 100 : 0;
+                const heightPx = maxValue > 0 ? (data[i] / maxValue) * 300 : 0;
+                const label = labels[i] + ' (' + ids[i] + ')';
+                const durationDisplay = Math.round(data[i]);
+                html += '<div class="bar-item">' +
+                    '<div class="bar-value">' + durationDisplay + 's</div>' +
+                    '<div class="bar-container" style="height: ' + Math.max(heightPx, 30) + 'px;">' +
+                    '<div class="bar-fill" style="height: 100%"></div>' +
+                    '</div>' +
+                    '<div class="bar-label" title="' + label + '">' + label + '</div>' +
+                    '</div>';
+            }
+            
+            durationChart.innerHTML = html;
         }
 
         // Setup auto-refresh
@@ -435,6 +507,7 @@ router.get('/', (req, res) => {
             loadGroupedData();
         });
         document.getElementById('country').addEventListener('change', loadGroupedData);
+        document.getElementById('maxEntries').addEventListener('change', loadGroupedData);
 
         // Initial load
         loadContinents().then(() => {
