@@ -69,6 +69,16 @@ EMAIL_FROM=noreply@yourdomain.com
 
 ## Common Issues and Solutions
 
+### Emails Failing Despite Correct Credentials
+
+**Cause:** Some SMTP servers don't properly implement the EHLO command used for connection verification
+
+**Solution:**
+- The application no longer uses blocking `verify()` calls before sending emails
+- Email sending now happens directly through `sendMail()` which handles its own connection
+- Use the `test-email.js` script to test your configuration separately
+- If emails still fail, check the application logs for specific error codes
+
 ### Authentication Failed (Error 535)
 
 **Cause:** Incorrect credentials or security settings
