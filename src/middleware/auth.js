@@ -34,6 +34,10 @@ function authenticateApiKey(req, res, next) {
       });
     }
 
+    // Update last_used_at timestamp
+    const updateLastUsedStmt = db.prepare('UPDATE api_keys SET last_used_at = ? WHERE id = ?');
+    updateLastUsedStmt.run(currentTime, keyRecord.id);
+
     req.apiKeyData = keyRecord;
     next();
   } catch (error) {
