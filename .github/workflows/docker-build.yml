@@ -33,6 +33,12 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Verify registry access
+      run: |
+        echo "Logged in as: ${{ github.actor }}"
+        echo "Registry: ${{ env.REGISTRY }}"
+        echo "Image will be: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+
     - name: Extract version from tag
       id: get_version
       run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
@@ -49,18 +55,32 @@ jobs:
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
           type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value=latest,enable=${{ github.event_name == 'workflow_dispatch' }}
+
+    - name: Debug metadata
+      run: |
+        echo "Event name: ${{ github.event_name }}"
+        echo "Ref: ${{ github.ref }}"
+        echo "Tags: ${{ steps.meta.outputs.tags }}"
+        echo "Labels: ${{ steps.meta.outputs.labels }}"
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
         context: .
         file: ./Dockerfile
-        push: ${{ github.event_name != 'workflow_dispatch' }}
+        push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
         platforms: linux/amd64,linux/arm64
+
+    - name: Verify push result
+      run: |
+        echo "Build completed. Checking if images were pushed..."
+        echo "Image tags that should be available:"
+        echo "${{ steps.meta.outputs.tags }}"
 
     - name: Summary
       run: |
