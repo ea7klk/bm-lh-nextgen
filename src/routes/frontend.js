@@ -98,20 +98,20 @@ router.get('/', (req, res) => {
         .bar-chart {
             display: flex;
             flex-direction: row;
-            gap: 8px;
+            gap: 20px;
             align-items: flex-end;
             justify-content: center;
             max-height: 500px;
             overflow-x: auto;
             overflow-y: visible;
-            padding: 20px 10px 120px 10px;
+            padding: 20px 10px 80px 10px;
         }
         .bar-item {
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-width: 50px;
-            max-width: 80px;
+            min-width: 60px;
+            max-width: 90px;
         }
         .bar-container {
             width: 40px;
@@ -137,8 +137,8 @@ router.get('/', (req, res) => {
             text-align: left;
             transform: rotate(-45deg);
             transform-origin: top left;
-            margin-top: 10px;
-            margin-left: 20px;
+            margin-top: 25px;
+            margin-left: 5px;
             max-width: 150px;
             overflow: hidden;
             text-overflow: ellipsis;
