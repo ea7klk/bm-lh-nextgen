@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 /**
- * Home page - displays recent lastheard activity
+ * Home page - displays grouped lastheard activity
  */
 router.get('/', (req, res) => {
   res.send(`
@@ -11,7 +11,7 @@ router.get('/', (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brandmeister Last Heard - Next Generation</title>
+    <title>What's on in Brandmeister?</title>
     <style>
         * {
             margin: 0;
@@ -39,32 +39,12 @@ router.get('/', (req, res) => {
             color: #333;
             margin-bottom: 10px;
             font-size: 32px;
+            text-align: center;
         }
         .header p {
             color: #666;
             font-size: 16px;
-        }
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-        .stat-card {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-        }
-        .stat-card .value {
-            font-size: 24px;
-            font-weight: 600;
-            color: #333;
-        }
-        .stat-card .label {
-            font-size: 14px;
-            color: #666;
-            margin-top: 5px;
+            text-align: center;
         }
         .controls {
             background: white;
@@ -76,43 +56,86 @@ router.get('/', (req, res) => {
             gap: 15px;
             flex-wrap: wrap;
             align-items: center;
+            justify-content: center;
         }
-        .controls input {
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 150px;
+        }
+        .control-group label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .controls select {
             padding: 10px 15px;
             border: 2px solid #e0e0e0;
             border-radius: 6px;
             font-size: 14px;
-            flex: 1;
-            min-width: 200px;
+            background: white;
+            cursor: pointer;
         }
-        .controls input:focus {
+        .controls select:focus {
             outline: none;
             border-color: #667eea;
         }
-        .controls button {
-            padding: 10px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        .chart-title {
+            color: #333;
+            font-size: 20px;
             font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s;
+            margin-bottom: 20px;
+            text-align: center;
         }
-        .controls button:hover {
-            transform: translateY(-2px);
+        .bar-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 400px;
+            overflow-y: auto;
         }
-        .controls .auto-refresh {
+        .bar-item {
             display: flex;
             align-items: center;
             gap: 10px;
-            color: #666;
-            font-size: 14px;
         }
-        .controls .auto-refresh input[type="checkbox"] {
-            width: auto;
-            min-width: auto;
+        .bar-label {
+            min-width: 150px;
+            font-size: 14px;
+            color: #333;
+            text-align: right;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .bar-container {
+            flex: 1;
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.8), rgba(102, 126, 234, 0.6));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .bar-value {
+            min-width: 50px;
+            font-size: 14px;
+            color: #666;
+            font-weight: 600;
+            text-align: right;
         }
         .table-container {
             background: white;
@@ -120,34 +143,18 @@ router.get('/', (req, res) => {
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
         }
-        .table-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .table-header h2 {
-            font-size: 20px;
-        }
-        .last-update {
-            font-size: 14px;
-            opacity: 0.9;
-        }
         table {
             width: 100%;
             border-collapse: collapse;
         }
         thead {
-            background: #f8f9fa;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
         }
         th {
             padding: 15px;
             text-align: left;
             font-weight: 600;
-            color: #333;
-            border-bottom: 2px solid #e0e0e0;
         }
         td {
             padding: 15px;
@@ -157,26 +164,22 @@ router.get('/', (req, res) => {
         tbody tr:hover {
             background: #f8f9fa;
         }
-        .callsign {
+        .talkgroup-name {
             font-weight: 600;
             color: #667eea;
         }
-        .dmr-id {
+        .talkgroup-id {
             font-family: 'Courier New', monospace;
             color: #666;
             font-size: 13px;
         }
-        .talkgroup {
+        .count {
             font-weight: 600;
-            color: #764ba2;
+            color: #28a745;
         }
         .duration {
             font-family: 'Courier New', monospace;
-            color: #28a745;
-        }
-        .timestamp {
             color: #666;
-            font-size: 13px;
         }
         .loading {
             text-align: center;
@@ -191,25 +194,23 @@ router.get('/', (req, res) => {
         .footer {
             text-align: center;
             margin-top: 20px;
+            padding: 20px;
             color: white;
             font-size: 14px;
+            line-height: 1.6;
         }
         .footer a {
             color: white;
-            text-decoration: none;
-            margin: 0 10px;
-        }
-        .footer a:hover {
             text-decoration: underline;
         }
+        .footer a:hover {
+            opacity: 0.8;
+        }
         @media (max-width: 768px) {
-            .stats {
-                grid-template-columns: 1fr;
-            }
             .controls {
                 flex-direction: column;
             }
-            .controls input, .controls button {
+            .control-group {
                 width: 100%;
             }
             table {
@@ -224,193 +225,222 @@ router.get('/', (req, res) => {
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔊 Brandmeister Last Heard</h1>
-            <p>Real-time DMR activity from the Brandmeister network</p>
-            <div class="stats" id="stats">
-                <div class="stat-card">
-                    <div class="value" id="totalEntries">-</div>
-                    <div class="label">Total Entries</div>
-                </div>
-                <div class="stat-card">
-                    <div class="value" id="last24Hours">-</div>
-                    <div class="label">Last 24 Hours</div>
-                </div>
-                <div class="stat-card">
-                    <div class="value" id="uniqueCallsigns">-</div>
-                    <div class="label">Unique Callsigns</div>
-                </div>
-                <div class="stat-card">
-                    <div class="value" id="uniqueTalkgroups">-</div>
-                    <div class="label">Unique Talkgroups</div>
-                </div>
-            </div>
+            <h1>🔊 What's on in Brandmeister?</h1>
+            <p>Real-time activity statistics from the Brandmeister DMR network</p>
         </div>
 
         <div class="controls">
-            <input type="text" id="callsignFilter" placeholder="Filter by callsign...">
-            <input type="text" id="talkgroupFilter" placeholder="Filter by talkgroup ID...">
-            <button onclick="applyFilters()">Apply Filters</button>
-            <button onclick="clearFilters()">Clear</button>
-            <div class="auto-refresh">
-                <input type="checkbox" id="autoRefresh" checked>
-                <label for="autoRefresh">Auto-refresh (30s)</label>
+            <div class="control-group">
+                <label for="timeRange">Time Range</label>
+                <select id="timeRange">
+                    <option value="5m">Last 5 minutes</option>
+                    <option value="15m">Last 15 minutes</option>
+                    <option value="30m" selected>Last 30 minutes</option>
+                    <option value="1h">Last hour</option>
+                    <option value="2h">Last 2 hours</option>
+                    <option value="6h">Last 6 hours</option>
+                    <option value="12h">Last 12 hours</option>
+                    <option value="24h">Last 24 hours</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="continent">Continent</label>
+                <select id="continent">
+                    <option value="Global">Global</option>
+                </select>
+            </div>
+            <div class="control-group" id="countryGroup" style="display: none;">
+                <label for="country">Country</label>
+                <select id="country"></select>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">Destination Name Distribution</div>
+            <div class="bar-chart" id="barChart">
+                <div style="text-align: center; color: #666; padding: 40px;">Loading chart...</div>
             </div>
         </div>
 
         <div class="table-container">
-            <div class="table-header">
-                <h2>Recent Activity</h2>
-                <div class="last-update">Last updated: <span id="lastUpdate">-</span></div>
-            </div>
-            <div id="tableContent">
-                <div class="loading">Loading data...</div>
-            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Destination Name</th>
+                        <th>Destination ID</th>
+                        <th>Count</th>
+                        <th>Total Duration (seconds)</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="4" class="loading">Loading data...</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
         <div class="footer">
-            <a href="/api/auth/request-key">Request API Key</a> | 
-            <a href="/api-docs">API Documentation</a> | 
-            <a href="/admin">Admin Panel</a>
+            <p>
+                This website is provided by Volker Kerkhoff, 41089 Dos Hermanas (Spain).<br>
+                We do not use cookies, neither own or third-party.<br>
+                The complete <a href="https://github.com/ea7klk/bm-lh-nextgen" target="_blank" rel="noopener noreferrer">source code is available on GitHub</a> and is under MIT license.<br>
+                Please contact me via GitHub issues or volker at ea7klk dot es
+            </p>
+            <p style="margin-top: 15px;">
+                <a href="/api/auth/request-key">Request API Key</a> | 
+                <a href="/api-docs">API Documentation</a> | 
+                <a href="/admin">Admin Panel</a>
+            </p>
         </div>
     </div>
 
     <script>
         let autoRefreshInterval = null;
 
-        // Format timestamp to readable date/time
-        function formatTimestamp(timestamp) {
-            const date = new Date(timestamp * 1000);
-            return date.toLocaleString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-        }
-
-        // Format duration in seconds to readable format
-        function formatDuration(seconds) {
-            if (!seconds) return '-';
-            const mins = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            if (mins > 0) {
-                return mins + 'm ' + secs + 's';
-            }
-            return secs + 's';
-        }
-
-        // Load statistics
-        async function loadStats() {
+        // Load continents on page load
+        async function loadContinents() {
             try {
-                const response = await fetch('/public/stats');
-                const data = await response.json();
+                const response = await fetch('/public/continents');
+                const continents = await response.json();
                 
-                document.getElementById('totalEntries').textContent = data.totalEntries.toLocaleString();
-                document.getElementById('last24Hours').textContent = data.last24Hours.toLocaleString();
-                document.getElementById('uniqueCallsigns').textContent = data.uniqueCallsigns.toLocaleString();
-                document.getElementById('uniqueTalkgroups').textContent = data.uniqueTalkgroups.toLocaleString();
+                const select = document.getElementById('continent');
+                select.innerHTML = '';
+                continents.forEach(continent => {
+                    const option = document.createElement('option');
+                    option.value = continent;
+                    option.textContent = continent;
+                    select.appendChild(option);
+                });
             } catch (error) {
-                console.error('Error loading stats:', error);
+                console.error('Error loading continents:', error);
             }
         }
 
-        // Load lastheard data
-        async function loadLastheard() {
+        // Load countries when continent changes
+        async function loadCountries(continent) {
+            if (continent === 'Global') {
+                document.getElementById('countryGroup').style.display = 'none';
+                return;
+            }
+
             try {
-                const callsign = document.getElementById('callsignFilter').value.trim();
-                const talkgroup = document.getElementById('talkgroupFilter').value.trim();
+                const response = await fetch('/public/countries?continent=' + encodeURIComponent(continent));
+                const countries = await response.json();
                 
-                let url = '/public/lastheard?limit=50';
-                if (callsign) url += '&callsign=' + encodeURIComponent(callsign);
-                if (talkgroup) url += '&talkgroup=' + encodeURIComponent(talkgroup);
+                const select = document.getElementById('country');
+                select.innerHTML = '';
+                
+                if (countries.length > 0) {
+                    countries.forEach(country => {
+                        const option = document.createElement('option');
+                        option.value = country.value;
+                        option.textContent = country.label;
+                        select.appendChild(option);
+                    });
+                    document.getElementById('countryGroup').style.display = 'flex';
+                } else {
+                    document.getElementById('countryGroup').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading countries:', error);
+                document.getElementById('countryGroup').style.display = 'none';
+            }
+        }
+
+        // Load grouped data
+        async function loadGroupedData() {
+            try {
+                const timeRange = document.getElementById('timeRange').value;
+                const continent = document.getElementById('continent').value;
+                const countrySelect = document.getElementById('country');
+                const country = (continent !== 'Global' && countrySelect.options.length > 0) 
+                    ? countrySelect.value 
+                    : '';
+                
+                let url = '/public/lastheard/grouped?timeRange=' + timeRange;
+                if (continent) url += '&continent=' + encodeURIComponent(continent);
+                if (country) url += '&country=' + encodeURIComponent(country);
                 
                 const response = await fetch(url);
                 const data = await response.json();
                 
-                const tableContent = document.getElementById('tableContent');
+                const tableBody = document.getElementById('tableBody');
                 
                 if (data.length === 0) {
-                    tableContent.innerHTML = '<div class="no-data">No data available</div>';
+                    tableBody.innerHTML = '<tr><td colspan="4" class="no-data">No data available for selected time range and filters</td></tr>';
+                    updateChart([], []);
                 } else {
-                    let html = '<table><thead><tr>';
-                    html += '<th>Time</th>';
-                    html += '<th>Callsign</th>';
-                    html += '<th>DMR ID</th>';
-                    html += '<th>Name</th>';
-                    html += '<th>Talkgroup</th>';
-                    html += '<th>TG Name</th>';
-                    html += '<th>Duration</th>';
-                    html += '</tr></thead><tbody>';
-                    
-                    data.forEach(entry => {
+                    let html = '';
+                    data.forEach(item => {
                         html += '<tr>';
-                        html += '<td class="timestamp">' + formatTimestamp(entry.Start) + '</td>';
-                        html += '<td class="callsign">' + (entry.SourceCall || '-') + '</td>';
-                        html += '<td class="dmr-id">' + (entry.SourceID || '-') + '</td>';
-                        html += '<td>' + (entry.SourceName || '-') + '</td>';
-                        html += '<td class="talkgroup">' + (entry.DestinationID || '-') + '</td>';
-                        html += '<td>' + (entry.DestinationName || '-') + '</td>';
-                        html += '<td class="duration">' + formatDuration(entry.duration) + '</td>';
+                        html += '<td class="talkgroup-name">' + (item.destinationName || 'N/A') + '</td>';
+                        html += '<td class="talkgroup-id">' + (item.destinationId || 'N/A') + '</td>';
+                        html += '<td class="count">' + (item.count || 0) + '</td>';
+                        html += '<td class="duration">' + (item.totalDuration ? Math.round(item.totalDuration) : '0') + '</td>';
                         html += '</tr>';
                     });
+                    tableBody.innerHTML = html;
                     
-                    html += '</tbody></table>';
-                    tableContent.innerHTML = html;
+                    // Update chart
+                    const labels = data.map(item => item.destinationName || 'N/A');
+                    const counts = data.map(item => item.count || 0);
+                    updateChart(labels, counts);
                 }
-                
-                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
             } catch (error) {
-                console.error('Error loading lastheard data:', error);
-                document.getElementById('tableContent').innerHTML = '<div class="no-data">Error loading data</div>';
+                console.error('Error loading grouped data:', error);
+                document.getElementById('tableBody').innerHTML = 
+                    '<tr><td colspan="4" class="no-data">Error loading data</td></tr>';
             }
         }
 
-        // Apply filters
-        function applyFilters() {
-            loadLastheard();
-        }
-
-        // Clear filters
-        function clearFilters() {
-            document.getElementById('callsignFilter').value = '';
-            document.getElementById('talkgroupFilter').value = '';
-            loadLastheard();
+        // Update chart with CSS bars
+        function updateChart(labels, data) {
+            const barChart = document.getElementById('barChart');
+            
+            if (data.length === 0) {
+                barChart.innerHTML = '<div style="text-align: center; color: #666; padding: 40px;">No data to display</div>';
+                return;
+            }
+            
+            const maxValue = Math.max(...data);
+            let html = '';
+            
+            for (let i = 0; i < Math.min(labels.length, data.length); i++) {
+                const percentage = maxValue > 0 ? (data[i] / maxValue) * 100 : 0;
+                html += '<div class="bar-item">' +
+                    '<div class="bar-label" title="' + labels[i] + '">' + labels[i] + '</div>' +
+                    '<div class="bar-container">' +
+                    '<div class="bar-fill" style="width: ' + percentage + '%"></div>' +
+                    '</div>' +
+                    '<div class="bar-value">' + data[i] + '</div>' +
+                    '</div>';
+            }
+            
+            barChart.innerHTML = html;
         }
 
         // Setup auto-refresh
         function setupAutoRefresh() {
-            const checkbox = document.getElementById('autoRefresh');
-            
-            if (checkbox.checked) {
-                if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-                autoRefreshInterval = setInterval(() => {
-                    loadLastheard();
-                    loadStats();
-                }, 30000); // 30 seconds
-            } else {
-                if (autoRefreshInterval) {
-                    clearInterval(autoRefreshInterval);
-                    autoRefreshInterval = null;
-                }
-            }
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            autoRefreshInterval = setInterval(() => {
+                loadGroupedData();
+            }, 10000); // 10 seconds like bm-lh-v2
         }
 
-        // Handle auto-refresh checkbox change
-        document.getElementById('autoRefresh').addEventListener('change', setupAutoRefresh);
-
-        // Handle Enter key in filter inputs
-        document.getElementById('callsignFilter').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') applyFilters();
+        // Event listeners
+        document.getElementById('timeRange').addEventListener('change', loadGroupedData);
+        document.getElementById('continent').addEventListener('change', async function() {
+            await loadCountries(this.value);
+            loadGroupedData();
         });
-        document.getElementById('talkgroupFilter').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') applyFilters();
-        });
+        document.getElementById('country').addEventListener('change', loadGroupedData);
 
         // Initial load
-        loadStats();
-        loadLastheard();
-        setupAutoRefresh();
+        loadContinents().then(() => {
+            loadGroupedData();
+            setupAutoRefresh();
+        });
     </script>
 </body>
 </html>
