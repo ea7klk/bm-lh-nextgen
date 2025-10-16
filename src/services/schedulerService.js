@@ -1,6 +1,26 @@
 const { db } = require('../db/database');
 const { sendExpiryReminderEmail } = require('./emailService');
 
+// Clean up lastheard records older than 7 days
+function cleanupOldRecords() {
+  const sevenDaysAgo = Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60);
+  
+  try {
+    const deleteStmt = db.prepare(`
+      DELETE FROM lastheard 
+      WHERE Start < ?
+    `);
+    
+    const result = deleteStmt.run(sevenDaysAgo);
+    
+    if (result.changes > 0) {
+      console.log(`Cleaned up ${result.changes} lastheard records older than 7 days`);
+    }
+  } catch (error) {
+    console.error('Error cleaning up old records:', error);
+  }
+}
+
 // Check for keys that need expiry reminders or removal
 async function checkApiKeyExpiry() {
   const currentTime = Math.floor(Date.now() / 1000);
@@ -71,9 +91,13 @@ function startScheduler() {
   
   // Run immediately on startup
   checkApiKeyExpiry();
+  cleanupOldRecords();
   
   // Run every 24 hours (86400000 milliseconds)
-  setInterval(checkApiKeyExpiry, 24 * 60 * 60 * 1000);
+  setInterval(() => {
+    checkApiKeyExpiry();
+    cleanupOldRecords();
+  }, 24 * 60 * 60 * 1000);
   
   console.log('Scheduler started - checking every 24 hours');
 }
@@ -81,4 +105,5 @@ function startScheduler() {
 module.exports = {
   startScheduler,
   checkApiKeyExpiry,
+  cleanupOldRecords,
 };
