@@ -8,6 +8,12 @@ const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD || '';
 const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@example.com';
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
+// Email security settings
+const EMAIL_SECURE = process.env.EMAIL_SECURE !== undefined 
+  ? process.env.EMAIL_SECURE === 'true' 
+  : parseInt(EMAIL_PORT) === 465;
+const EMAIL_REQUIRE_TLS = process.env.EMAIL_REQUIRE_TLS === 'true';
+
 // Validate email configuration
 function validateEmailConfig() {
   if (!EMAIL_USER || !EMAIL_PASSWORD) {
@@ -27,7 +33,7 @@ function createTransporter() {
     const transporterConfig = {
       host: EMAIL_HOST,
       port: parseInt(EMAIL_PORT),
-      secure: parseInt(EMAIL_PORT) === 465, // true for 465, false for other ports
+      secure: EMAIL_SECURE, // Use configured secure setting
       auth: {
         user: EMAIL_USER,
         pass: EMAIL_PASSWORD,
@@ -37,6 +43,11 @@ function createTransporter() {
         rejectUnauthorized: false // Allow self-signed certificates
       }
     };
+
+    // Add requireTLS option if configured
+    if (EMAIL_REQUIRE_TLS) {
+      transporterConfig.requireTLS = true;
+    }
 
     // Gmail specific configuration
     if (EMAIL_HOST.includes('gmail')) {
