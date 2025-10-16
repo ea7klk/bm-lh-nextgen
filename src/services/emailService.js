@@ -324,15 +324,113 @@ This is an automated email. Please do not reply.
 
 // Test email configuration
 async function testEmailConfig() {
+  // Check for configuration issues first
+  const configIssues = [];
+  
+  if (!EMAIL_USER || EMAIL_USER === '') {
+    configIssues.push('EMAIL_USER is not set');
+  }
+  
+  if (!EMAIL_PASSWORD || EMAIL_PASSWORD === '') {
+    configIssues.push('EMAIL_PASSWORD is not set');
+  }
+  
+  if (EMAIL_HOST === 'smtp.example.com') {
+    configIssues.push('EMAIL_HOST is using default value (smtp.example.com) - please configure your actual SMTP server');
+  }
+  
+  if (!EMAIL_HOST || EMAIL_HOST === '') {
+    configIssues.push('EMAIL_HOST is not set');
+  }
+  
+  if (!EMAIL_PORT || EMAIL_PORT === '') {
+    configIssues.push('EMAIL_PORT is not set');
+  }
+  
+  if (!EMAIL_FROM || EMAIL_FROM === '' || EMAIL_FROM === 'noreply@example.com') {
+    configIssues.push('EMAIL_FROM is not set or using default value');
+  }
+  
+  // If there are configuration issues, return them
+  if (configIssues.length > 0) {
+    return {
+      success: false,
+      error: 'Email configuration is incomplete or invalid',
+      details: configIssues,
+      errorType: 'configuration'
+    };
+  }
+  
+  // Check if transporter was created
   if (!transporter) {
-    return { success: false, error: 'Email transporter not available' };
+    return {
+      success: false,
+      error: 'Email transporter could not be created',
+      details: ['The email transporter initialization failed. This usually means there was an error validating the configuration.'],
+      errorType: 'transporter'
+    };
   }
 
+  // Try to verify the connection
   try {
     await transporter.verify();
-    return { success: true, message: 'Email configuration is valid' };
+    return {
+      success: true,
+      message: 'Email configuration is valid and connection test passed',
+      details: ['Successfully connected to SMTP server', 'Authentication verified']
+    };
   } catch (error) {
-    return { success: false, error: error.message };
+    // Provide detailed error information
+    const errorDetails = {
+      success: false,
+      error: error.message,
+      errorType: 'connection',
+      details: []
+    };
+    
+    // Add error code if available
+    if (error.code) {
+      errorDetails.errorCode = error.code;
+      errorDetails.details.push(`Error code: ${error.code}`);
+    }
+    
+    // Add command if available (shows which SMTP command failed)
+    if (error.command) {
+      errorDetails.details.push(`Failed during: ${error.command}`);
+    }
+    
+    // Add response code if available
+    if (error.responseCode) {
+      errorDetails.details.push(`SMTP response code: ${error.responseCode}`);
+    }
+    
+    // Add response if available
+    if (error.response) {
+      errorDetails.details.push(`Server response: ${error.response}`);
+    }
+    
+    // Add stack trace for debugging
+    if (error.stack) {
+      errorDetails.stackTrace = error.stack;
+    }
+    
+    // Provide specific guidance based on error type
+    if (error.code === 'EAUTH') {
+      errorDetails.details.push('Authentication failed - check your EMAIL_USER and EMAIL_PASSWORD');
+      errorDetails.details.push('For Gmail: Use App Password instead of regular password');
+      errorDetails.details.push('For Gmail: Enable 2-factor authentication first');
+    } else if (error.code === 'ECONNECTION' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
+      errorDetails.details.push('Connection failed - check EMAIL_HOST and EMAIL_PORT');
+      errorDetails.details.push('Verify your internet connection');
+      errorDetails.details.push('Check if firewall or antivirus is blocking the connection');
+    } else if (error.code === 'ESOCKET') {
+      errorDetails.details.push('Socket error - connection was interrupted');
+      errorDetails.details.push('This may be a temporary network issue');
+    } else if (error.code === 'EENVELOPE') {
+      errorDetails.details.push('Invalid email address in EMAIL_FROM');
+    }
+    
+    return errorDetails;
   }
 }
 
