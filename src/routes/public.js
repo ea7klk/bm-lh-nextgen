@@ -68,7 +68,7 @@ router.get('/lastheard/grouped', (req, res) => {
     }
     
     // Build query for filtering by continent/country via talkgroups table
-    let whereClause = 'WHERE Start >= ?';
+    let whereClause = 'WHERE Start >= ? AND DestinationID != 9';
     const params = [startTime];
     
     if (continent && continent !== 'All') {
@@ -146,7 +146,7 @@ router.get('/lastheard', (req, res) => {
     const callsign = req.query.callsign;
     const talkgroup = req.query.talkgroup;
     
-    let query = 'SELECT * FROM lastheard WHERE 1=1';
+    let query = 'SELECT * FROM lastheard WHERE DestinationID != 9';
     const params = [];
     
     if (callsign) {
@@ -184,12 +184,12 @@ router.get('/lastheard', (req, res) => {
  */
 router.get('/stats', (req, res) => {
   try {
-    const totalEntries = db.prepare('SELECT COUNT(*) as count FROM lastheard').get();
-    const recentEntries = db.prepare('SELECT COUNT(*) as count FROM lastheard WHERE Start > ?').get(
+    const totalEntries = db.prepare('SELECT COUNT(*) as count FROM lastheard WHERE DestinationID != 9').get();
+    const recentEntries = db.prepare('SELECT COUNT(*) as count FROM lastheard WHERE Start > ? AND DestinationID != 9').get(
       Math.floor(Date.now() / 1000) - 24 * 60 * 60 // last 24 hours
     );
-    const uniqueCallsigns = db.prepare('SELECT COUNT(DISTINCT SourceCall) as count FROM lastheard').get();
-    const uniqueTalkgroups = db.prepare('SELECT COUNT(DISTINCT DestinationID) as count FROM lastheard').get();
+    const uniqueCallsigns = db.prepare('SELECT COUNT(DISTINCT SourceCall) as count FROM lastheard WHERE DestinationID != 9').get();
+    const uniqueTalkgroups = db.prepare('SELECT COUNT(DISTINCT DestinationID) as count FROM lastheard WHERE DestinationID != 9').get();
     
     res.json({
       totalEntries: totalEntries.count,

@@ -504,6 +504,11 @@ async function updateTalkgroups() {
         const talkgroupId = tg.id;
         const name = tg.name || '';
         
+        // Skip Local talkgroup (ID 9)
+        if (talkgroupId === 9) {
+          continue;
+        }
+        
         // Determine country from talkgroup ID
         let country = 'XX'; // Default to unknown
         
@@ -756,7 +761,7 @@ async function updateTalkgroups() {
 // Get all talkgroups
 function getAllTalkgroups() {
   try {
-    const stmt = db.prepare('SELECT * FROM talkgroups ORDER BY talkgroup_id');
+    const stmt = db.prepare('SELECT * FROM talkgroups WHERE talkgroup_id != 9 ORDER BY talkgroup_id');
     return stmt.all();
   } catch (error) {
     console.error('Error fetching talkgroups:', error);
@@ -778,7 +783,7 @@ function getTalkgroupById(talkgroupId) {
 // Get talkgroups by continent
 function getTalkgroupsByContinent(continent) {
   try {
-    const stmt = db.prepare('SELECT * FROM talkgroups WHERE continent = ? ORDER BY talkgroup_id');
+    const stmt = db.prepare('SELECT * FROM talkgroups WHERE continent = ? AND talkgroup_id != 9 ORDER BY talkgroup_id');
     return stmt.all(continent);
   } catch (error) {
     console.error('Error fetching talkgroups by continent:', error);
@@ -789,7 +794,7 @@ function getTalkgroupsByContinent(continent) {
 // Get talkgroups by country
 function getTalkgroupsByCountry(country) {
   try {
-    const stmt = db.prepare('SELECT * FROM talkgroups WHERE country = ? ORDER BY talkgroup_id');
+    const stmt = db.prepare('SELECT * FROM talkgroups WHERE country = ? AND talkgroup_id != 9 ORDER BY talkgroup_id');
     return stmt.all(country);
   } catch (error) {
     console.error('Error fetching talkgroups by country:', error);

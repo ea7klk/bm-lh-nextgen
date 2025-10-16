@@ -46,8 +46,10 @@ function startBrandmeisterService() {
       const start = Number(msg.Start);
       const stop = Number(msg.Stop);
       const duration = Number.isFinite(start) && Number.isFinite(stop) ? stop - start : NaN;
+      const destinationId = Number(msg.DestinationID);
 
-      if (isSessionStop && hasGroupVoiceCall && sourceOk && destOk && duration > 5) {
+      // Exclude Local talkgroup (ID 9) from all processing
+      if (isSessionStop && hasGroupVoiceCall && sourceOk && destOk && duration > 5 && destinationId !== 9) {
         // Insert into database
         try {
           const stmt = db.prepare(`

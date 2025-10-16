@@ -172,7 +172,7 @@ router.get('/talkgroups', (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;
     const offset = parseInt(req.query.offset) || 0;
-    const stmt = db.prepare('SELECT * FROM talkgroups ORDER BY talkgroup_id LIMIT ? OFFSET ?');
+    const stmt = db.prepare('SELECT * FROM talkgroups WHERE talkgroup_id != 9 ORDER BY talkgroup_id LIMIT ? OFFSET ?');
     const talkgroups = stmt.all(limit, offset);
     res.json(talkgroups);
   } catch (error) {
@@ -221,7 +221,7 @@ router.get('/talkgroups/continent/:continent', (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;
     const offset = parseInt(req.query.offset) || 0;
-    const stmt = db.prepare('SELECT * FROM talkgroups WHERE continent = ? ORDER BY talkgroup_id LIMIT ? OFFSET ?');
+    const stmt = db.prepare('SELECT * FROM talkgroups WHERE continent = ? AND talkgroup_id != 9 ORDER BY talkgroup_id LIMIT ? OFFSET ?');
     const talkgroups = stmt.all(req.params.continent, limit, offset);
     res.json(talkgroups);
   } catch (error) {
@@ -270,7 +270,7 @@ router.get('/talkgroups/country/:country', (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;
     const offset = parseInt(req.query.offset) || 0;
-    const stmt = db.prepare('SELECT * FROM talkgroups WHERE country = ? ORDER BY talkgroup_id LIMIT ? OFFSET ?');
+    const stmt = db.prepare('SELECT * FROM talkgroups WHERE country = ? AND talkgroup_id != 9 ORDER BY talkgroup_id LIMIT ? OFFSET ?');
     const talkgroups = stmt.all(req.params.country, limit, offset);
     res.json(talkgroups);
   } catch (error) {

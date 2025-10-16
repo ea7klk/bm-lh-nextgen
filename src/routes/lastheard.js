@@ -85,7 +85,7 @@ const { authenticateApiKey } = require('../middleware/auth');
 router.get('/lastheard', authenticateApiKey, (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
-    const stmt = db.prepare('SELECT * FROM lastheard ORDER BY Start DESC LIMIT ?');
+    const stmt = db.prepare('SELECT * FROM lastheard WHERE DestinationID != 9 ORDER BY Start DESC LIMIT ?');
     const entries = stmt.all(limit);
     res.json(entries);
   } catch (error) {
@@ -252,7 +252,7 @@ router.post('/lastheard', authenticateApiKey, (req, res) => {
 router.get('/lastheard/callsign/:callsign', authenticateApiKey, (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
-    const stmt = db.prepare('SELECT * FROM lastheard WHERE SourceCall = ? ORDER BY Start DESC LIMIT ?');
+    const stmt = db.prepare('SELECT * FROM lastheard WHERE SourceCall = ? AND DestinationID != 9 ORDER BY Start DESC LIMIT ?');
     const entries = stmt.all(req.params.callsign, limit);
     res.json(entries);
   } catch (error) {
