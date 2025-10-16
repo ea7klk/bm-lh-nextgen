@@ -151,6 +151,7 @@ The `api_keys` table includes:
 - `is_active` - Active status
 - `created_at` - Creation timestamp
 - `expires_at` - Expiration timestamp (365 days from creation)
+- `last_used_at` - Last usage timestamp (updated on each API request)
 
 The `email_verifications` table includes:
 - `id` - Unique identifier

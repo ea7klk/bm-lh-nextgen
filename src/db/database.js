@@ -147,6 +147,20 @@ function initDatabase() {
     console.error('Error during migration:', error);
   }
 
+  // Migrate existing api_keys table to add last_used_at column if it doesn't exist
+  try {
+    const columns = db.pragma('table_info(api_keys)');
+    const hasLastUsedAt = columns.some(col => col.name === 'last_used_at');
+    
+    if (!hasLastUsedAt) {
+      console.log('Migrating api_keys table to add last_used_at column...');
+      db.exec(`ALTER TABLE api_keys ADD COLUMN last_used_at INTEGER`);
+      console.log('Migration completed successfully');
+    }
+  } catch (error) {
+    console.error('Error during migration:', error);
+  }
+
   console.log('Database initialized successfully');
 }
 
