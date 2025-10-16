@@ -5,6 +5,11 @@ A Node.js REST API with Swagger documentation for tracking Brandmeister DMR radi
 
 ## Features
 
+- **Modern Web Interface** - Clean, responsive homepage displaying real-time DMR activity
+- **Real-time Updates** - Auto-refresh functionality to show latest activity
+- **Public Access** - View lastheard data without API key requirement
+- **Advanced Filtering** - Filter by callsign or talkgroup ID
+- **Statistics Dashboard** - Quick overview of system activity
 - RESTful API built with Express.js
 - SQLite database for local data storage
 - Interactive Swagger/OpenAPI documentation
@@ -67,6 +72,20 @@ npm run dev
 ```
 
 The server will start on `http://localhost:3000`
+
+## Using the Application
+
+### Web Interface
+
+The application provides a modern web interface for viewing real-time DMR activity:
+
+1. **Homepage** - Navigate to `http://localhost:3000` to view the last heard activity
+   - See recent DMR transmissions in real-time
+   - View statistics (total entries, 24-hour activity, unique callsigns/talkgroups)
+   - Filter by callsign or talkgroup ID
+   - Auto-refresh every 30 seconds (toggleable)
+
+The web interface is fully responsive and works on desktop, tablet, and mobile devices.
 
 ## API Authentication
 
@@ -132,6 +151,15 @@ http://localhost:3000/api-docs
 
 ## API Endpoints
 
+### Frontend (Public Access - No Authentication Required)
+- `GET /` - Homepage with real-time lastheard display
+
+### Public API (No Authentication Required)
+- `GET /public/lastheard` - Get recent lastheard entries (with optional filtering)
+  - Query parameters: `limit`, `callsign`, `talkgroup`
+  - Example: `/public/lastheard?callsign=EA7KLK&limit=10`
+- `GET /public/stats` - Get statistics about lastheard data
+
 ### Authentication
 - `GET /api/auth/request-key` - Display API key request form
 - `POST /api/auth/request-key` - Submit API key request
@@ -145,7 +173,6 @@ http://localhost:3000/api-docs
 - `DELETE /admin/verifications/:id` - Delete an email verification
 
 ### Lastheard (Requires API Key)
-- `GET /` - API information
 - `GET /health` - Health check
 - `GET /api/lastheard` - Get recent lastheard entries
 - `GET /api/lastheard/:id` - Get specific entry by ID
