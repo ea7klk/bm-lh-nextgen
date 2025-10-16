@@ -5,6 +5,7 @@ const express = require('express');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 const { initDatabase } = require('./db/database');
+const { startScheduler } = require('./services/schedulerService');
 const lastheardRoutes = require('./routes/lastheard');
 const authRoutes = require('./routes/auth');
 
@@ -17,6 +18,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Initialize database
 initDatabase();
+
+// Start scheduler for API key expiry checks
+startScheduler();
 
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

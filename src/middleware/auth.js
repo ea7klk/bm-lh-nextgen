@@ -21,6 +21,19 @@ function authenticateApiKey(req, res, next) {
       });
     }
 
+    // Check if the API key has expired
+    const currentTime = Math.floor(Date.now() / 1000);
+    if (keyRecord.expires_at && keyRecord.expires_at < currentTime) {
+      // Deactivate the expired key
+      const deactivateStmt = db.prepare('UPDATE api_keys SET is_active = 0 WHERE id = ?');
+      deactivateStmt.run(keyRecord.id);
+      
+      return res.status(403).json({ 
+        error: 'API key has expired',
+        message: 'Your API key has expired. Please request a new one at /api/auth/request-key'
+      });
+    }
+
     req.apiKeyData = keyRecord;
     next();
   } catch (error) {

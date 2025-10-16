@@ -39,7 +39,8 @@ function initDatabase() {
       name TEXT NOT NULL,
       email TEXT NOT NULL,
       is_active INTEGER DEFAULT 1,
-      created_at INTEGER DEFAULT (strftime('%s', 'now'))
+      created_at INTEGER DEFAULT (strftime('%s', 'now')),
+      expires_at INTEGER
     )
   `);
 
@@ -61,6 +62,28 @@ function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_api_key ON api_keys(api_key);
     CREATE INDEX IF NOT EXISTS idx_verification_token ON email_verifications(verification_token);
   `);
+
+  // Migrate existing api_keys table to add expires_at column if it doesn't exist
+  try {
+    const columns = db.pragma('table_info(api_keys)');
+    const hasExpiresAt = columns.some(col => col.name === 'expires_at');
+    
+    if (!hasExpiresAt) {
+      console.log('Migrating api_keys table to add expires_at column...');
+      db.exec(`ALTER TABLE api_keys ADD COLUMN expires_at INTEGER`);
+      
+      // Set expiration date for existing keys (365 days from created_at)
+      db.exec(`
+        UPDATE api_keys 
+        SET expires_at = created_at + (365 * 24 * 60 * 60)
+        WHERE expires_at IS NULL
+      `);
+      
+      console.log('Migration completed successfully');
+    }
+  } catch (error) {
+    console.error('Error during migration:', error);
+  }
 
   console.log('Database initialized successfully');
 }
