@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const { db } = require('../db/database');
-const { authenticateApiKey } = require('../middleware/auth');
 
 /**
  * @swagger
@@ -39,8 +38,6 @@ const { authenticateApiKey } = require('../middleware/auth');
  *   get:
  *     summary: List all continents
  *     description: Get a list of all unique continents in the talkgroups table
- *     security:
- *       - ApiKeyAuth: []
  *     tags:
  *       - Talkgroups
  *     responses:
@@ -52,12 +49,8 @@ const { authenticateApiKey } = require('../middleware/auth');
  *               type: array
  *               items:
  *                 type: string
- *       401:
- *         description: API key is required
- *       403:
- *         description: Invalid or inactive API key
  */
-router.get('/talkgroups/continents', authenticateApiKey, (req, res) => {
+router.get('/talkgroups/continents', (req, res) => {
   try {
     const stmt = db.prepare('SELECT DISTINCT continent FROM talkgroups WHERE continent IS NOT NULL ORDER BY continent');
     const continents = stmt.all().map(row => row.continent);
@@ -73,8 +66,6 @@ router.get('/talkgroups/continents', authenticateApiKey, (req, res) => {
  *   get:
  *     summary: List all countries
  *     description: Get a list of all unique countries in the talkgroups table
- *     security:
- *       - ApiKeyAuth: []
  *     tags:
  *       - Talkgroups
  *     responses:
@@ -93,12 +84,8 @@ router.get('/talkgroups/continents', authenticateApiKey, (req, res) => {
  *                   full_country_name:
  *                     type: string
  *                     description: Full country name
- *       401:
- *         description: API key is required
- *       403:
- *         description: Invalid or inactive API key
  */
-router.get('/talkgroups/countries', authenticateApiKey, (req, res) => {
+router.get('/talkgroups/countries', (req, res) => {
   try {
     const stmt = db.prepare('SELECT DISTINCT country, full_country_name FROM talkgroups ORDER BY country');
     const countries = stmt.all();
@@ -114,8 +101,6 @@ router.get('/talkgroups/countries', authenticateApiKey, (req, res) => {
  *   get:
  *     summary: List countries by continent
  *     description: Get a list of countries for a specific continent
- *     security:
- *       - ApiKeyAuth: []
  *     tags:
  *       - Talkgroups
  *     parameters:
@@ -141,12 +126,8 @@ router.get('/talkgroups/countries', authenticateApiKey, (req, res) => {
  *                   full_country_name:
  *                     type: string
  *                     description: Full country name
- *       401:
- *         description: API key is required
- *       403:
- *         description: Invalid or inactive API key
  */
-router.get('/talkgroups/countries/:continent', authenticateApiKey, (req, res) => {
+router.get('/talkgroups/countries/:continent', (req, res) => {
   try {
     const stmt = db.prepare('SELECT DISTINCT country, full_country_name FROM talkgroups WHERE continent = ? ORDER BY country');
     const countries = stmt.all(req.params.continent);
@@ -162,8 +143,6 @@ router.get('/talkgroups/countries/:continent', authenticateApiKey, (req, res) =>
  *   get:
  *     summary: List all talkgroups
  *     description: Get a list of all talkgroups
- *     security:
- *       - ApiKeyAuth: []
  *     tags:
  *       - Talkgroups
  *     parameters:
@@ -188,12 +167,8 @@ router.get('/talkgroups/countries/:continent', authenticateApiKey, (req, res) =>
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Talkgroup'
- *       401:
- *         description: API key is required
- *       403:
- *         description: Invalid or inactive API key
  */
-router.get('/talkgroups', authenticateApiKey, (req, res) => {
+router.get('/talkgroups', (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;
     const offset = parseInt(req.query.offset) || 0;
@@ -211,8 +186,6 @@ router.get('/talkgroups', authenticateApiKey, (req, res) => {
  *   get:
  *     summary: List all talkgroups by continent
  *     description: Get all talkgroups for a specific continent
- *     security:
- *       - ApiKeyAuth: []
  *     tags:
  *       - Talkgroups
  *     parameters:
@@ -243,12 +216,8 @@ router.get('/talkgroups', authenticateApiKey, (req, res) => {
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Talkgroup'
- *       401:
- *         description: API key is required
- *       403:
- *         description: Invalid or inactive API key
  */
-router.get('/talkgroups/continent/:continent', authenticateApiKey, (req, res) => {
+router.get('/talkgroups/continent/:continent', (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;
     const offset = parseInt(req.query.offset) || 0;
@@ -266,8 +235,6 @@ router.get('/talkgroups/continent/:continent', authenticateApiKey, (req, res) =>
  *   get:
  *     summary: List all talkgroups by country
  *     description: Get all talkgroups for a specific country
- *     security:
- *       - ApiKeyAuth: []
  *     tags:
  *       - Talkgroups
  *     parameters:
@@ -298,12 +265,8 @@ router.get('/talkgroups/continent/:continent', authenticateApiKey, (req, res) =>
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Talkgroup'
- *       401:
- *         description: API key is required
- *       403:
- *         description: Invalid or inactive API key
  */
-router.get('/talkgroups/country/:country', authenticateApiKey, (req, res) => {
+router.get('/talkgroups/country/:country', (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;
     const offset = parseInt(req.query.offset) || 0;
