@@ -52,6 +52,7 @@ The following environment variables can be configured:
 - `EMAIL_USER` - SMTP username
 - `EMAIL_PASSWORD` - SMTP password
 - `EMAIL_FROM` - From email address (default: noreply@example.com)
+- `ADMIN_PASSWORD` - Password for accessing the admin panel at `/admin`
 
 ## Running the Application
 
@@ -101,6 +102,27 @@ The scheduler runs daily to:
 2. Deactivate API keys that have expired
 3. Maintain system security by removing stale credentials
 
+## Admin Panel
+
+A password-protected admin panel is available at `/admin` for managing API keys and email verifications.
+
+### Accessing the Admin Panel
+
+1. Navigate to `http://localhost:3000/admin`
+2. Enter the admin credentials (username can be anything, password is from `ADMIN_PASSWORD` in `.env`)
+3. View and manage API keys and email verifications
+
+### Admin Features
+
+- **View API Keys**: See all API keys with their status, creation date, expiration, and last usage
+- **Delete API Keys**: Remove API keys from the system
+- **View Email Verifications**: See all email verification requests (both verified and pending)
+- **Delete Verifications**: Clean up old or invalid verification records
+- **Statistics Dashboard**: Quick overview of total, active, and inactive keys/verifications
+- **Real-time Updates**: Refresh data to see the latest state
+
+![Admin Panel](https://github.com/user-attachments/assets/550482a5-2908-4a67-b8f6-f1bb8327c147)
+
 ## API Documentation
 
 Once the server is running, access the interactive Swagger documentation at:
@@ -114,6 +136,13 @@ http://localhost:3000/api-docs
 - `GET /api/auth/request-key` - Display API key request form
 - `POST /api/auth/request-key` - Submit API key request
 - `GET /api/auth/verify-email?token=<token>` - Verify email and receive API key
+
+### Admin (Requires Password Authentication)
+- `GET /admin` - Admin panel interface
+- `GET /admin/api-keys` - List all API keys
+- `DELETE /admin/api-keys/:id` - Delete an API key
+- `GET /admin/verifications` - List all email verifications
+- `DELETE /admin/verifications/:id` - Delete an email verification
 
 ### Lastheard (Requires API Key)
 - `GET /` - API information
