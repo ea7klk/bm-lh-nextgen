@@ -11,6 +11,8 @@ const lastheardRoutes = require('./routes/lastheard');
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const talkgroupsRoutes = require('./routes/talkgroups');
+const publicRoutes = require('./routes/public');
+const frontendRoutes = require('./routes/frontend');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -31,6 +33,12 @@ startBrandmeisterService();
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+// Frontend routes (public HTML pages)
+app.use('/', frontendRoutes);
+
+// Public API routes (no authentication required for viewing)
+app.use('/public', publicRoutes);
+
 // Auth routes (public, no authentication required)
 app.use('/api/auth', authRoutes);
 
@@ -40,15 +48,6 @@ app.use('/admin', adminRoutes);
 // API Routes (protected with API key authentication)
 app.use('/api', lastheardRoutes);
 app.use('/api', talkgroupsRoutes);
-
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({
-    message: 'Brandmeister Lastheard Next Generation API',
-    version: '1.0.0',
-    documentation: '/api-docs',
-  });
-});
 
 // Health check endpoint
 app.get('/health', (req, res) => {

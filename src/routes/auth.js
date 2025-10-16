@@ -375,7 +375,7 @@ router.get('/verify-email', async (req, res) => {
         <div class="info-box">
             <p><strong>Check your email for your API key</strong></p>
         </div>
-        <a href="/" class="back-link">Go to API Home</a>
+        <a href="/" class="back-link">Go to Home</a>
     </div>
 </body>
 </html>
@@ -678,7 +678,7 @@ router.get('/verify-email', async (req, res) => {
      ${process.env.BASE_URL || 'http://localhost:3000'}/api/lastheard</code>
         </div>
         
-        <a href="/" class="back-link">← Go to API Home</a>
+        <a href="/" class="back-link">← Go to Home</a>
     </div>
 
     <script>
@@ -948,7 +948,7 @@ router.get('/request-key', (req, res) => {
             <p>4. Use the API key in the <code>X-API-Key</code> header</p>
         </div>
         
-        <a href="/" class="back-link">← Back to API</a>
+        <a href="/" class="back-link">← Back to Home</a>
     </div>
 
     <script>
