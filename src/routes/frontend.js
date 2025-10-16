@@ -98,23 +98,23 @@ router.get('/', (req, res) => {
         .bar-chart {
             display: flex;
             flex-direction: row;
-            gap: 15px;
+            gap: 8px;
             align-items: flex-end;
             justify-content: center;
             max-height: 500px;
             overflow-x: auto;
             overflow-y: visible;
-            padding: 20px 10px 100px 10px;
+            padding: 20px 10px 120px 10px;
         }
         .bar-item {
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-width: 80px;
-            max-width: 120px;
+            min-width: 50px;
+            max-width: 80px;
         }
         .bar-container {
-            width: 60px;
+            width: 40px;
             min-height: 30px;
             max-height: 400px;
             background: #f0f0f0;
@@ -132,13 +132,14 @@ router.get('/', (req, res) => {
             transition: height 0.3s ease;
         }
         .bar-label {
-            font-size: 12px;
+            font-size: 11px;
             color: #333;
-            text-align: center;
-            writing-mode: vertical-rl;
-            transform: rotate(180deg);
+            text-align: left;
+            transform: rotate(-45deg);
+            transform-origin: top left;
             margin-top: 10px;
-            max-height: 200px;
+            margin-left: 20px;
+            max-width: 150px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -165,14 +166,16 @@ router.get('/', (req, res) => {
             color: white;
         }
         th {
-            padding: 15px;
+            padding: 12px 10px;
             text-align: left;
             font-weight: 600;
+            font-size: 14px;
         }
         td {
-            padding: 15px;
+            padding: 10px;
             color: #333;
             border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
         }
         tbody tr:hover {
             background: #f8f9fa;
