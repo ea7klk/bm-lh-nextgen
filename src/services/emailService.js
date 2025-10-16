@@ -149,8 +149,6 @@ This is an automated email. Please do not reply.
   };
 
   try {
-    // Test the connection before sending
-    await transporter.verify();
     await transporter.sendMail(mailOptions);
     console.log(`Verification email sent to ${email}`);
     return true;
@@ -307,8 +305,6 @@ This is an automated email. Please do not reply.
   };
 
   try {
-    // Test the connection before sending
-    await transporter.verify();
     await transporter.sendMail(mailOptions);
     console.log(`API key email sent to ${email}`);
     return true;
@@ -461,7 +457,6 @@ This is an automated email. Please do not reply.
   };
 
   try {
-    await transporter.verify();
     await transporter.sendMail(mailOptions);
     console.log(`Expiry reminder email sent to ${email} (${daysUntilExpiry} days until expiry)`);
     return true;
