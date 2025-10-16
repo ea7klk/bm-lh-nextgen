@@ -5,6 +5,8 @@ const { db } = require('../db/database');
 const COUNTRY_NAMES = {
   'WW': 'Worldwide',
   'Global': 'Global',
+  'XX': 'Other',
+  'Unknown': 'Unknown',
   'EU': 'Europe',
   'NA': 'North America',
   'SA': 'South America',
@@ -203,8 +205,10 @@ const COUNTRY_NAMES = {
 
 // Country to continent mapping
 const COUNTRY_TO_CONTINENT = {
-  'WW': 'Global',
+  'WW': 'Other',
   'Global': 'Global',
+  'XX': 'Other',
+  'Unknown': 'Other',
   'EU': 'Europe',
   'NA': 'North America',
   'SA': 'South America',
@@ -501,27 +505,19 @@ async function updateTalkgroups() {
         const name = tg.name || '';
         
         // Determine country from talkgroup ID
-        let country = 'Global';
+        let country = 'XX'; // Default to unknown
         
-        // Apply Brandmeister talkgroup numbering scheme logic
-        if (talkgroupId >= 46600 && talkgroupId <= 46699) {
-          // Taiwan talkgroups (466xx) - check this first
+        // Apply simplified logic: Only talkgroups starting with 9 are Global
+        const tgString = talkgroupId.toString();
+        if (tgString.startsWith('9')) {
+          // Global talkgroups - only those starting with 9
+          country = 'Global';
+        } else if (talkgroupId >= 46600 && talkgroupId <= 46699) {
+          // Taiwan talkgroups (466xx)
           country = 'TW';
         } else if (talkgroupId >= 250000 && talkgroupId <= 250999) {
-          // Russia talkgroups (250xx) - check this first
+          // Russia talkgroups (250xx)
           country = 'RU';
-        } else if (talkgroupId >= 1 && talkgroupId <= 99) {
-          // System talkgroups (1-99)
-          country = 'Global';
-        } else if (talkgroupId >= 900 && talkgroupId <= 999) {
-          // Worldwide talkgroups (900-999)
-          country = 'Global';
-        } else if (talkgroupId >= 8000 && talkgroupId <= 8999) {
-          // Regional talkgroups (8000-8999)
-          country = 'Global';
-        } else if (talkgroupId >= 9000 && talkgroupId <= 99999) {
-          // Worldwide talkgroups (9000-99999) - expanded range for all 9xxxx
-          country = 'Global';
         } else {
           // Country-specific talkgroups
           const tgString = talkgroupId.toString();
@@ -575,27 +571,27 @@ async function updateTalkgroups() {
               '714': 'PA', '716': 'PE', '722': 'AR', '724': 'BR', '730': 'CL',
               '732': 'CO', '734': 'VE', '740': 'EC', '748': 'UY',
               
-              // Special codes for multi-country regions
-              '899': 'Global', // Repeater Testing
-              '907': 'Global', // JOTA
+              // Special codes for specific regions (non-global)
+              '899': 'XX',     // Repeater Testing - assign to unknown region
+              '907': 'XX',     // JOTA - assign to unknown region
               '910': 'DE',     // German language
-              '913': 'Global', // English language
-              '914': 'Global', // Spanish language
-              '915': 'Global', // Portuguese language
-              '916': 'Global', // Italian language
-              '918': 'Global', // YOTA
+              '913': 'XX',     // English language - assign to unknown region
+              '914': 'XX',     // Spanish language - assign to unknown region  
+              '915': 'XX',     // Portuguese language - assign to unknown region
+              '916': 'XX',     // Italian language - assign to unknown region
+              '918': 'XX',     // YOTA - assign to unknown region
               '920': 'DE',     // DL, OE, HB9
               '922': 'NL',     // Dutch language
-              '923': 'Global', // European English
+              '923': 'XX',     // European English - assign to unknown region
               '924': 'SE',     // Swedish language
-              '927': 'Global', // Nordic
+              '927': 'XX',     // Nordic - assign to unknown region
               '930': 'GR',     // PanHellenic Chat
               '937': 'FR',     // Francophonie
-              '940': 'Global', // Arabic language
-              '955': 'Global', // WWYL
-              '969': 'Global', // DMR-Caribbean
+              '940': 'XX',     // Arabic language - assign to unknown region
+              '955': 'XX',     // WWYL - assign to unknown region
+              '969': 'XX',     // DMR-Caribbean - assign to unknown region
               '971': 'ES',     // Basque
-              '973': 'Global', // SOTA
+              '973': 'XX',     // SOTA - assign to unknown region
               
               // 4+ digit patterns for regional/local talkgroups
               '2020': 'GR', // Greece regional
@@ -726,22 +722,15 @@ async function updateTalkgroups() {
               '2507': 'RU', // Russia extended
               '25070': 'RU', // Russia regional extended
               
-              // Special global/multi-national talkgroups
-              '9322': 'Global', // 9-DACH (Germany, Austria, Switzerland)
-              '9515': 'Global', // Global NorCal 5150
-              '9791': 'Global', // Red Américas EMCOM
-              '9800': 'Global', // Various 98xxx global talkgroups
-              '9801': 'Global',
-              '9802': 'Global', 
-              '9753': 'Global', // 9-PLDMO
-              '9838': 'Global', // 9-TETRA
+              // These talkgroups starting with 9 are now handled by the "starts with 9" rule above
+              // and will automatically be set to 'Global'
             };
             
             // Try 4-digit match first, then 3-digit, then 2-digit
             country = countryMappings[countryCode4] || 
                      countryMappings[countryCode] || 
                      countryMappings[countryCode2] || 
-                     'Unknown';
+                     'XX';
           }
         }
 

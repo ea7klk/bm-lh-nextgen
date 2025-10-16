@@ -97,59 +97,66 @@ router.get('/', (req, res) => {
         }
         .bar-chart {
             display: flex;
-            flex-direction: row;
-            gap: 20px;
-            align-items: flex-end;
-            justify-content: center;
-            max-height: 500px;
-            overflow-x: auto;
-            overflow-y: visible;
-            padding: 20px 10px 80px 10px;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-start;
+            justify-content: flex-start;
+            max-height: 800px;
+            overflow-y: auto;
+            overflow-x: visible;
+            padding: 20px;
         }
         .bar-item {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
-            min-width: 60px;
-            max-width: 90px;
+            width: 100%;
+            min-height: 20px;
+            position: relative;
+            gap: 10px;
         }
         .bar-container {
-            width: 40px;
-            min-height: 30px;
-            max-height: 400px;
+            height: 18px;
+            min-width: 50px;
             background: #f0f0f0;
             border-radius: 4px;
             position: relative;
-            overflow: visible;
+            overflow: hidden;
             display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
+            flex-direction: row;
+            justify-content: flex-start;
+            flex: 1;
+            z-index: 0;
         }
         .bar-fill {
-            width: 100%;
-            background: linear-gradient(180deg, rgba(102, 126, 234, 0.8), rgba(102, 126, 234, 0.6));
+            height: 100%;
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.8), rgba(102, 126, 234, 0.6));
             border-radius: 4px;
-            transition: height 0.3s ease;
+            transition: width 0.3s ease;
+            position: relative;
+            z-index: 0;
         }
         .bar-label {
             font-size: 11px;
             color: #333;
             text-align: left;
-            transform: rotate(-45deg);
-            transform-origin: top left;
-            margin-top: 25px;
-            margin-left: 5px;
-            max-width: 150px;
+            min-width: 200px;
+            max-width: 200px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            position: relative;
+            z-index: 1;
+            flex-shrink: 0;
         }
         .bar-value {
             font-size: 12px;
             color: #666;
             font-weight: 600;
-            text-align: center;
-            margin-bottom: 5px;
+            text-align: right;
+            min-width: 50px;
+            margin-right: 10px;
+            flex-shrink: 0;
         }
         .table-container {
             background: white;
@@ -235,6 +242,24 @@ router.get('/', (req, res) => {
             th, td {
                 padding: 10px 5px;
             }
+            .bar-label {
+                min-width: 150px;
+                max-width: 150px;
+                font-size: 10px;
+            }
+            .bar-value {
+                min-width: 40px;
+                font-size: 11px;
+            }
+        }
+        @media (min-width: 1200px) {
+            .bar-label {
+                min-width: 250px;
+                max-width: 250px;
+            }
+            .bar-value {
+                min-width: 60px;
+            }
         }
     </style>
 </head>
@@ -280,6 +305,8 @@ router.get('/', (req, res) => {
                     <option value="20">20</option>
                     <option value="25" selected>25</option>
                     <option value="30">30</option>
+                    <option value="40">40</option>
+                    <option value="50">50</option>
                 </select>
             </div>
         </div>
@@ -321,7 +348,7 @@ router.get('/', (req, res) => {
                 This website is provided by Volker Kerkhoff, 41089 Dos Hermanas (Spain).<br>
                 We do not use cookies, neither own or third-party.<br>
                 The complete <a href="https://github.com/ea7klk/bm-lh-nextgen" target="_blank" rel="noopener noreferrer">source code is available on GitHub</a> and is under MIT license.<br>
-                Please contact me via GitHub issues or volker at ea7klk dot es
+                Please contact me via <a href="https://github.com/ea7klk/bm-lh-nextgen/issues" target="_blank" rel="noopener noreferrer">GitHub issues</a> or volker at ea7klk dot es
             </p>
             <p style="margin-top: 15px;">
                 <a href="/api/auth/request-key">Request API Key</a> | 
@@ -403,7 +430,14 @@ router.get('/', (req, res) => {
                     url += '&country=' + encodeURIComponent(country);
                 }
                 
-                const response = await fetch(url);
+                console.log('Loading data with URL:', url);
+                console.log('Continent selected:', continent);
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 const data = await response.json();
                 
                 const tableBody = document.getElementById('tableBody');
@@ -411,6 +445,7 @@ router.get('/', (req, res) => {
                 if (data.length === 0) {
                     tableBody.innerHTML = '<tr><td colspan="4" class="no-data">No data available for selected time range and filters</td></tr>';
                     updateChart([], [], []);
+                    updateDurationChart([], [], []);
                 } else {
                     let html = '';
                     data.forEach(item => {
@@ -427,23 +462,30 @@ router.get('/', (req, res) => {
                     const labels = data.map(item => item.destinationName || 'N/A');
                     const ids = data.map(item => item.destinationId || 'N/A');
                     const counts = data.map(item => item.count || 0);
-                    const durations = data.map(item => item.totalDuration || 0);
                     updateChart(labels, ids, counts);
-                    updateDurationChart(labels, ids, durations);
+                    
+                    // Sort data by duration for duration chart (descending)
+                    const sortedByDuration = [...data].sort((a, b) => (b.totalDuration || 0) - (a.totalDuration || 0));
+                    const durationLabels = sortedByDuration.map(item => item.destinationName || 'N/A');
+                    const durationIds = sortedByDuration.map(item => item.destinationId || 'N/A');
+                    const durations = sortedByDuration.map(item => item.totalDuration || 0);
+                    updateDurationChart(durationLabels, durationIds, durations);
                 }
             } catch (error) {
                 console.error('Error loading grouped data:', error);
                 document.getElementById('tableBody').innerHTML = 
                     '<tr><td colspan="4" class="no-data">Error loading data</td></tr>';
+                updateChart([], [], []);
+                updateDurationChart([], [], []);
             }
         }
 
-        // Update chart with vertical CSS bars
+        // Update chart with horizontal CSS bars
         function updateChart(labels, ids, data) {
             const barChart = document.getElementById('barChart');
             
             if (data.length === 0) {
-                barChart.innerHTML = '<div style="text-align: center; color: #666; padding: 40px;">No data to display</div>';
+                barChart.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 200px; color: #666; font-size: 18px; font-weight: bold;">No data to display</div>';
                 return;
             }
             
@@ -451,27 +493,26 @@ router.get('/', (req, res) => {
             let html = '';
             
             for (let i = 0; i < Math.min(labels.length, data.length); i++) {
-                const heightPercentage = maxValue > 0 ? (data[i] / maxValue) * 100 : 0;
-                const heightPx = maxValue > 0 ? (data[i] / maxValue) * 300 : 0;
+                const widthPercentage = maxValue > 0 ? (data[i] / maxValue) * 100 : 0;
                 const label = labels[i] + ' (' + ids[i] + ')';
                 html += '<div class="bar-item">' +
-                    '<div class="bar-value">' + data[i] + '</div>' +
-                    '<div class="bar-container" style="height: ' + Math.max(heightPx, 30) + 'px;">' +
-                    '<div class="bar-fill" style="height: 100%"></div>' +
-                    '</div>' +
                     '<div class="bar-label" title="' + label + '">' + label + '</div>' +
+                    '<div class="bar-container">' +
+                    '<div class="bar-fill" style="width: ' + widthPercentage + '%"></div>' +
+                    '</div>' +
+                    '<div class="bar-value">' + data[i] + '</div>' +
                     '</div>';
             }
             
             barChart.innerHTML = html;
         }
 
-        // Update duration chart with vertical CSS bars
+        // Update duration chart with horizontal CSS bars
         function updateDurationChart(labels, ids, data) {
             const durationChart = document.getElementById('durationChart');
             
             if (data.length === 0) {
-                durationChart.innerHTML = '<div style="text-align: center; color: #666; padding: 40px;">No data to display</div>';
+                durationChart.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 200px; color: #666; font-size: 18px; font-weight: bold;">No data to display</div>';
                 return;
             }
             
@@ -479,16 +520,15 @@ router.get('/', (req, res) => {
             let html = '';
             
             for (let i = 0; i < Math.min(labels.length, data.length); i++) {
-                const heightPercentage = maxValue > 0 ? (data[i] / maxValue) * 100 : 0;
-                const heightPx = maxValue > 0 ? (data[i] / maxValue) * 300 : 0;
+                const widthPercentage = maxValue > 0 ? (data[i] / maxValue) * 100 : 0;
                 const label = labels[i] + ' (' + ids[i] + ')';
                 const durationDisplay = Math.round(data[i]);
                 html += '<div class="bar-item">' +
-                    '<div class="bar-value">' + durationDisplay + 's</div>' +
-                    '<div class="bar-container" style="height: ' + Math.max(heightPx, 30) + 'px;">' +
-                    '<div class="bar-fill" style="height: 100%"></div>' +
-                    '</div>' +
                     '<div class="bar-label" title="' + label + '">' + label + '</div>' +
+                    '<div class="bar-container">' +
+                    '<div class="bar-fill" style="width: ' + widthPercentage + '%"></div>' +
+                    '</div>' +
+                    '<div class="bar-value">' + durationDisplay + ' sec</div>' +
                     '</div>';
             }
             
@@ -503,17 +543,97 @@ router.get('/', (req, res) => {
             }, 10000); // 10 seconds like bm-lh-v2
         }
 
+        // Cookie utility functions for saving preferences
+        function setCookie(name, value, days) {
+            const expires = new Date();
+            expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+            document.cookie = name + '=' + encodeURIComponent(value) + ';expires=' + expires.toUTCString() + ';path=/';
+        }
+
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for(let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+            }
+            return null;
+        }
+
+        function savePreferences() {
+            const timeRange = document.getElementById('timeRange').value;
+            const continent = document.getElementById('continent').value;
+            const country = document.getElementById('country').value;
+            const maxEntries = document.getElementById('maxEntries').value;
+            
+            setCookie('bm_timeRange', timeRange, 15);
+            setCookie('bm_continent', continent, 15);
+            setCookie('bm_country', country, 15);
+            setCookie('bm_maxEntries', maxEntries, 15);
+        }
+
+        function loadPreferences() {
+            const timeRange = getCookie('bm_timeRange');
+            const continent = getCookie('bm_continent');
+            const country = getCookie('bm_country');
+            const maxEntries = getCookie('bm_maxEntries');
+            
+            if (timeRange && document.getElementById('timeRange')) {
+                document.getElementById('timeRange').value = timeRange;
+            }
+            if (maxEntries && document.getElementById('maxEntries')) {
+                document.getElementById('maxEntries').value = maxEntries;
+            }
+            
+            return { timeRange, continent, country, maxEntries };
+        }
+
         // Event listeners
-        document.getElementById('timeRange').addEventListener('change', loadGroupedData);
-        document.getElementById('continent').addEventListener('change', async function() {
-            await loadCountries(this.value);
+        document.getElementById('timeRange').addEventListener('change', function() {
+            savePreferences();
             loadGroupedData();
         });
-        document.getElementById('country').addEventListener('change', loadGroupedData);
-        document.getElementById('maxEntries').addEventListener('change', loadGroupedData);
+        document.getElementById('continent').addEventListener('change', async function() {
+            await loadCountries(this.value);
+            savePreferences();
+            loadGroupedData();
+        });
+        document.getElementById('country').addEventListener('change', function() {
+            savePreferences();
+            loadGroupedData();
+        });
+        document.getElementById('maxEntries').addEventListener('change', function() {
+            savePreferences();
+            loadGroupedData();
+        });
 
         // Initial load
-        loadContinents().then(() => {
+        loadContinents().then(async () => {
+            // Load saved preferences
+            const savedPrefs = loadPreferences();
+            
+            // Set continent preference if saved
+            if (savedPrefs.continent && document.getElementById('continent')) {
+                const continentSelect = document.getElementById('continent');
+                // Check if the saved continent option exists
+                const option = Array.from(continentSelect.options).find(opt => opt.value === savedPrefs.continent);
+                if (option) {
+                    continentSelect.value = savedPrefs.continent;
+                    // Load countries for the saved continent
+                    await loadCountries(savedPrefs.continent);
+                    
+                    // Set country preference if saved
+                    if (savedPrefs.country && document.getElementById('country')) {
+                        const countrySelect = document.getElementById('country');
+                        const countryOption = Array.from(countrySelect.options).find(opt => opt.value === savedPrefs.country);
+                        if (countryOption) {
+                            countrySelect.value = savedPrefs.country;
+                        }
+                    }
+                }
+            }
+            
             loadGroupedData();
             setupAutoRefresh();
         });

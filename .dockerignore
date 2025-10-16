@@ -1,0 +1,37 @@
+# Ignore node_modules (will be installed in container)
+node_modules/
+npm-debug.log*
+
+# Ignore local environment file (can be mounted as volume or passed as env vars)
+.env
+
+# Ignore git files
+.git/
+.gitignore
+
+# Ignore development files
+*.md
+EMAIL_*.md
+test-email.js
+
+# Ignore local data (should be mounted as volume for persistence)
+data/*.db*
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ignore logs
+logs/
+*.log
+
+# Ignore temporary files
+tmp/
+temp/
