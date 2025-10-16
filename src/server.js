@@ -10,6 +10,7 @@ const { startBrandmeisterService } = require('./services/brandmeisterService');
 const lastheardRoutes = require('./routes/lastheard');
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
+const talkgroupsRoutes = require('./routes/talkgroups');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,6 +39,7 @@ app.use('/admin', adminRoutes);
 
 // API Routes (protected with API key authentication)
 app.use('/api', lastheardRoutes);
+app.use('/api', talkgroupsRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
