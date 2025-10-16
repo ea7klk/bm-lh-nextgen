@@ -9,6 +9,7 @@ const { startScheduler } = require('./services/schedulerService');
 const { startBrandmeisterService } = require('./services/brandmeisterService');
 const lastheardRoutes = require('./routes/lastheard');
 const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -31,6 +32,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Auth routes (public, no authentication required)
 app.use('/api/auth', authRoutes);
+
+// Admin routes (protected with admin password)
+app.use('/admin', adminRoutes);
 
 // API Routes (protected with API key authentication)
 app.use('/api', lastheardRoutes);
