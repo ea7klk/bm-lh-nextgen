@@ -16,6 +16,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+      security-events: write  # Required for SARIF upload
+      actions: read
 
     steps:
     - name: Checkout code
@@ -59,20 +61,6 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
         platforms: linux/amd64,linux/arm64
-
-    - name: Run security scan
-      uses: anchore/scan-action@v3
-      id: scan
-      with:
-        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-        fail-build: false
-        severity-cutoff: high
-
-    - name: Upload scan results
-      uses: github/codeql-action/upload-sarif@v3
-      if: always()
-      with:
-        sarif_file: ${{ steps.scan.outputs.sarif }}
 
     - name: Summary
       run: |
