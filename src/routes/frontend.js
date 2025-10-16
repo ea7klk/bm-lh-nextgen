@@ -98,7 +98,7 @@ router.get('/', (req, res) => {
         .bar-chart {
             display: flex;
             flex-direction: row;
-            gap: 8px;
+            gap: 20px;
             align-items: flex-end;
             justify-content: center;
             max-height: 500px;
@@ -110,8 +110,8 @@ router.get('/', (req, res) => {
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-width: 50px;
-            max-width: 80px;
+            min-width: 60px;
+            max-width: 90px;
         }
         .bar-container {
             width: 40px;
