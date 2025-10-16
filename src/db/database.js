@@ -125,6 +125,26 @@ function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_verification_token ON email_verifications(verification_token);
   `);
 
+  // Create talkgroups table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS talkgroups (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      talkgroup_id INTEGER UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      country TEXT NOT NULL,
+      continent TEXT,
+      full_country_name TEXT,
+      last_updated INTEGER DEFAULT (strftime('%s', 'now'))
+    )
+  `);
+
+  // Create index for talkgroups
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_talkgroup_id ON talkgroups(talkgroup_id);
+    CREATE INDEX IF NOT EXISTS idx_country ON talkgroups(country);
+    CREATE INDEX IF NOT EXISTS idx_continent ON talkgroups(continent);
+  `);
+
   // Migrate existing api_keys table to add expires_at column if it doesn't exist
   try {
     const columns = db.pragma('table_info(api_keys)');
