@@ -332,7 +332,7 @@ router.get('/', (req, res) => {
                         <th>Destination Name</th>
                         <th>Destination ID</th>
                         <th>Count</th>
-                        <th>Total Duration (seconds)</th>
+                        <th>Total Duration</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
@@ -346,7 +346,7 @@ router.get('/', (req, res) => {
         <div class="footer">
             <p>
                 This website is provided by Volker Kerkhoff, 41089 Dos Hermanas (Spain).<br>
-                We do not use cookies, neither own or third-party.<br>
+                We use one own cookie to store your last preferences for 15 days.<br>
                 The complete <a href="https://github.com/ea7klk/bm-lh-nextgen" target="_blank" rel="noopener noreferrer">source code is available on GitHub</a> and is under MIT license.<br>
                 Please contact me via <a href="https://github.com/ea7klk/bm-lh-nextgen/issues" target="_blank" rel="noopener noreferrer">GitHub issues</a> or volker at ea7klk dot es
             </p>
@@ -360,6 +360,21 @@ router.get('/', (req, res) => {
 
     <script>
         let autoRefreshInterval = null;
+
+        // Format seconds to hours:minutes:seconds
+        function formatDuration(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            
+            if (hours > 0) {
+                return hours + ':' + minutes.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
+            } else if (minutes > 0) {
+                return minutes + ':' + secs.toString().padStart(2, '0');
+            } else {
+                return secs + ' sec';
+            }
+        }
 
         // Load continents on page load
         async function loadContinents() {
@@ -453,7 +468,7 @@ router.get('/', (req, res) => {
                         html += '<td class="talkgroup-name">' + (item.destinationName || 'N/A') + '</td>';
                         html += '<td class="talkgroup-id">' + (item.destinationId || 'N/A') + '</td>';
                         html += '<td class="count">' + (item.count || 0) + '</td>';
-                        html += '<td class="duration">' + (item.totalDuration ? Math.round(item.totalDuration) : '0') + '</td>';
+                        html += '<td class="duration">' + (item.totalDuration ? formatDuration(item.totalDuration) : '0 sec') + '</td>';
                         html += '</tr>';
                     });
                     tableBody.innerHTML = html;
@@ -522,13 +537,13 @@ router.get('/', (req, res) => {
             for (let i = 0; i < Math.min(labels.length, data.length); i++) {
                 const widthPercentage = maxValue > 0 ? (data[i] / maxValue) * 100 : 0;
                 const label = labels[i] + ' (' + ids[i] + ')';
-                const durationDisplay = Math.round(data[i]);
+                const durationDisplay = formatDuration(data[i]);
                 html += '<div class="bar-item">' +
                     '<div class="bar-label" title="' + label + '">' + label + '</div>' +
                     '<div class="bar-container">' +
                     '<div class="bar-fill" style="width: ' + widthPercentage + '%"></div>' +
                     '</div>' +
-                    '<div class="bar-value">' + durationDisplay + ' sec</div>' +
+                    '<div class="bar-value">' + durationDisplay + '</div>' +
                     '</div>';
             }
             
