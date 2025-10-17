@@ -387,7 +387,7 @@ router.get('/', authenticateUser, (req, res) => {
             <p>${__('home.subtitle')}</p>
             <div class="user-section">
                 <span class="user-greeting">${__('user.greeting', '<a href="/user/profile" class="user-callsign" style="text-decoration: none;">' + user.callsign + '</a>')}</span>
-                <a href="/" class="auth-link secondary">← Standard Dashboard</a>
+                <a href="/" class="auth-link secondary">${__('user.backToDashboard')}</a>
                 <button onclick="logout()" class="auth-link logout">${__('user.logoutButton')}</button>
             </div>
         </div>

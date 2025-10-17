@@ -145,6 +145,7 @@
     "alreadyHaveAccount": "¿Ya tienes una cuenta?",
     "loginHere": "Inicia sesión aquí",
     "backToHome": "← Volver al Inicio",
+    "backToDashboard": "← Panel Estándar",
     "verificationError": "Error de Verificación",
     "verificationTokenRequired": "Se requiere un token de verificación",
     "invalidToken": "Token de Verificación Inválido",

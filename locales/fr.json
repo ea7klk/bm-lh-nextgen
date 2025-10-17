@@ -145,6 +145,7 @@
     "alreadyHaveAccount": "Vous avez déjà un compte?",
     "loginHere": "Connectez-vous ici",
     "backToHome": "← Retour à l'Accueil",
+    "backToDashboard": "← Tableau de Bord Standard",
     "verificationError": "Erreur de Vérification",
     "verificationTokenRequired": "Le jeton de vérification est requis",
     "invalidToken": "Jeton de Vérification Invalide",

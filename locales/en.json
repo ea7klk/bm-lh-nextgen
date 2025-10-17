@@ -145,6 +145,7 @@
     "alreadyHaveAccount": "Already have an account?",
     "loginHere": "Login here",
     "backToHome": "← Back to Home",
+    "backToDashboard": "← Standard Dashboard",
     "verificationError": "Verification Error",
     "verificationTokenRequired": "Verification token is required",
     "invalidToken": "Invalid Verification Token",
