@@ -23,6 +23,17 @@ This document explains how to run the Brandmeister Lastheard Next Generation app
    - Admin panel: http://localhost:3000/admin
    - Health check: http://localhost:3000/health
 
+**How Environment Variables Work:**
+
+Docker Compose automatically reads variables from the `.env` file in the same directory. The `docker-compose.yml` uses:
+- `env_file: - .env` to load all variables into the container
+- `environment:` section with `${VARIABLE}` syntax to allow host-level overrides
+
+This means you can:
+1. Set defaults in `.env` file (recommended for most cases)
+2. Override specific values by exporting them in your shell before running `docker-compose up`
+3. The container receives the variables and uses them in the application
+
 ### Using Docker directly
 
 1. **Build the image:**
@@ -44,11 +55,53 @@ This document explains how to run the Brandmeister Lastheard Next Generation app
 
 ## Configuration Options
 
-The application can be configured in two ways:
+Docker Compose now properly reads environment variables from the `.env` file. There are three ways to configure the application:
 
-### Option 1: Environment Variables (Recommended for Docker)
+### Option 1: Using .env File (Recommended)
 
-Set environment variables directly in Docker:
+Create a `.env` file in the same directory as `docker-compose.yml`:
+
+```bash
+cp .env.example .env
+# Edit .env with your settings
+```
+
+Then simply run:
+```bash
+docker-compose up -d
+```
+
+Docker Compose will automatically:
+1. Read variables from `.env` file
+2. Pass them to the container via `env_file` directive
+3. Allow overrides via the `environment` section
+
+### Option 2: Shell Environment Variables
+
+You can override specific variables by exporting them before running docker-compose:
+
+```bash
+export EMAIL_HOST=smtp.gmail.com
+export EMAIL_USER=your-email@gmail.com
+docker-compose up -d
+```
+
+These will override the values in `.env` file.
+
+### Option 3: Direct Environment Variables in Docker Run
+
+For manual Docker runs without Compose:
+
+```bash
+docker run -d \
+  --name bm-lh-nextgen \
+  -p 3000:3000 \
+  -v $(pwd)/data:/app/data \
+  --env-file .env \
+  bm-lh-nextgen
+```
+
+Or specify variables individually:
 
 ```bash
 docker run -d \
@@ -63,17 +116,6 @@ docker run -d \
   -e EMAIL_PASSWORD=your-password \
   -e EMAIL_FROM=noreply@example.com \
   -e ADMIN_PASSWORD=your-secure-password \
-  bm-lh-nextgen
-```
-
-### Option 2: Mount .env file
-
-```bash
-docker run -d \
-  --name bm-lh-nextgen \
-  -p 3000:3000 \
-  -v $(pwd)/data:/app/data \
-  -v $(pwd)/.env:/app/.env:ro \
   bm-lh-nextgen
 ```
 
@@ -179,10 +221,40 @@ docker logs -f bm-lh-nextgen
 
 ## Troubleshooting
 
+### Environment Variables Not Working
+
+**Problem:** Environment variables from `.env` file don't seem to be passed to the container.
+
+**Solution:**
+1. Ensure `.env` file is in the same directory as `docker-compose.yml`
+2. Check that `.env` file has proper formatting (no spaces around `=`)
+   ```bash
+   # Correct
+   EMAIL_HOST=smtp.gmail.com
+   
+   # Incorrect
+   EMAIL_HOST = smtp.gmail.com
+   ```
+3. Verify the `env_file` directive is present in `docker-compose.yml`:
+   ```yaml
+   env_file:
+     - .env
+   ```
+4. Rebuild and restart the container:
+   ```bash
+   docker-compose down
+   docker-compose up -d --build
+   ```
+5. Check environment variables inside the container:
+   ```bash
+   docker-compose exec bm-lh-nextgen env | grep EMAIL
+   ```
+
 ### Container won't start
-- Check logs: `docker logs bm-lh-nextgen`
+- Check logs: `docker-compose logs bm-lh-nextgen`
 - Verify environment variables are set correctly
 - Ensure data directory has proper permissions
+- Check if port 3000 is already in use: `lsof -i :3000` or `netstat -an | grep 3000`
 
 ### Database issues
 - Ensure data volume is properly mounted

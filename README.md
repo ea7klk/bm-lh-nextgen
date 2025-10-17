@@ -1,326 +1,425 @@
 # bm-lh-nextgen
-Brandmeister Lastheard Next Generation
+**Brandmeister Lastheard Next Generation**
 
-A Node.js REST API with Swagger documentation for tracking Brandmeister DMR radio activity.
+A production-ready Node.js REST API with real-time web interface for tracking Brandmeister DMR radio activity. Features comprehensive Docker support, automated CI/CD, and professional email notifications.
 
-## Features
+## ✨ Key Features
 
-- **Modern Web Interface** - Clean, responsive homepage displaying real-time DMR activity
-- **Real-time Updates** - Auto-refresh functionality to show latest activity
-- **Public Access** - View lastheard data without API key requirement
+### Web Interface
+- **Modern Responsive UI** - Real-time DMR activity display
+- **Auto-refresh** - Live updates every 30 seconds (toggleable)
+- **Public Access** - No authentication required for viewing
 - **Advanced Filtering** - Filter by callsign or talkgroup ID
-- **Statistics Dashboard** - Quick overview of system activity
-- RESTful API built with Express.js
-- SQLite database for local data storage
-- Interactive Swagger/OpenAPI documentation
-- Endpoints for managing lastheard entries
-- API key authentication with email verification
-- Configurable email notifications
-- **Styled email confirmation pages**
-- **Professional HTML email templates**
-- **API key expiration (365 days)**
-- **Automated expiry reminders (30, 15, 5 days before expiry)**
-- **Automatic cleanup of expired API keys**
+- **Statistics Dashboard** - Total entries, 24h activity, unique callsigns/talkgroups
 
-## Prerequisites
+### API & Backend
+- **RESTful API** - Built with Express.js and comprehensive Swagger documentation
+- **SQLite Database** - Local data storage with efficient querying
+- **API Key Authentication** - Email verification with 365-day expiration
+- **Professional Email System** - Styled HTML templates for verification and notifications
+- **Automated Reminders** - Expiry notifications at 30, 15, and 5 days
+- **Smart Filtering** - Automatic exclusion of Local talkgroup (ID 9)
 
-- Node.js (v14 or higher)
-- npm
+### DevOps & Security
+- **Docker Ready** - Multi-stage builds, health checks, non-root execution
+- **CI/CD Pipeline** - Automated testing, building, and deployment via GitHub Actions
+- **Multi-Architecture** - AMD64 and ARM64 support
+- **Security Scanning** - Trivy and Anchore vulnerability detection
+- **Container Registry** - Automatic publishing to GitHub Container Registry
 
-## Installation
+## 🚀 Quick Start
 
-1. Clone the repository:
+### Using Docker (Recommended)
+
+The fastest way to get started:
+
 ```bash
+# Clone the repository
 git clone https://github.com/ea7klk/bm-lh-nextgen.git
 cd bm-lh-nextgen
-```
 
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Configure environment variables (optional):
-```bash
+# Configure environment variables
 cp .env.example .env
-# Edit .env with your email server configuration
+# Edit .env with your settings
+
+# Start with Docker Compose
+docker-compose up -d
 ```
 
-## Environment Variables
+Access the application:
+- **Web Interface**: http://localhost:3000
+- **API Documentation**: http://localhost:3000/api-docs
+- **Admin Panel**: http://localhost:3000/admin
+- **Health Check**: http://localhost:3000/health
 
-The following environment variables can be configured:
+### Using Pre-built Images
 
-- `PORT` - Server port (default: 3000)
-- `BASE_URL` - Base URL for email links (default: http://localhost:3000)
-- `EMAIL_HOST` - SMTP server hostname
-- `EMAIL_PORT` - SMTP server port (default: 587)
-- `EMAIL_USER` - SMTP username
-- `EMAIL_PASSWORD` - SMTP password
-- `EMAIL_FROM` - From email address (default: noreply@example.com)
-- `ADMIN_PASSWORD` - Password for accessing the admin panel at `/admin`
-
-## Running the Application
-
-Start the server:
 ```bash
+# Pull from GitHub Container Registry
+docker pull ghcr.io/ea7klk/bm-lh-nextgen:latest
+
+# Run with environment variables
+docker run -d \
+  -p 3000:3000 \
+  -v $(pwd)/data:/app/data \
+  --env-file .env \
+  ghcr.io/ea7klk/bm-lh-nextgen:latest
+```
+
+### Manual Installation
+
+**Prerequisites:**
+- Node.js v20 or higher
+- npm
+
+```bash
+# Clone and install dependencies
+git clone https://github.com/ea7klk/bm-lh-nextgen.git
+cd bm-lh-nextgen
+npm install
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your settings
+
+# Start the server
 npm start
 ```
 
-For development mode:
+## ⚙️ Configuration
+
+### Environment Variables
+
+Create a `.env` file from the provided template:
+
 ```bash
-npm run dev
+cp .env.example .env
 ```
 
-The server will start on `http://localhost:3000`
+**Essential Variables:**
 
-## Using the Application
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `PORT` | Server port | 3000 | No |
+| `BASE_URL` | Base URL for email links | http://localhost:3000 | Yes for email |
+| `ADMIN_PASSWORD` | Admin panel password | - | **Yes** |
+| `EMAIL_HOST` | SMTP server hostname | - | For email features |
+| `EMAIL_PORT` | SMTP server port | 587 | For email features |
+| `EMAIL_USER` | SMTP username | - | For email features |
+| `EMAIL_PASSWORD` | SMTP password/app password | - | For email features |
+| `EMAIL_FROM` | From email address | - | For email features |
+| `EMAIL_SECURE` | Use SSL/TLS (true for port 465) | false | No |
+| `EMAIL_REQUIRE_TLS` | Require STARTTLS | false | No |
+
+**Email Provider Examples:**
+
+<details>
+<summary><b>Gmail Configuration</b></summary>
+
+```bash
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-16-character-app-password
+EMAIL_FROM=your-email@gmail.com
+```
+
+*Note: Requires [App Password](https://support.google.com/accounts/answer/185833) with 2FA enabled*
+</details>
+
+<details>
+<summary><b>Outlook/Hotmail Configuration</b></summary>
+
+```bash
+EMAIL_HOST=smtp-mail.outlook.com
+EMAIL_PORT=587
+EMAIL_USER=your-email@outlook.com
+EMAIL_PASSWORD=your-password
+EMAIL_FROM=your-email@outlook.com
+```
+</details>
+
+See [EMAIL_SETUP.md](EMAIL_SETUP.md) for detailed email configuration guide.
+
+## 📱 Using the Application
 
 ### Web Interface
 
-The application provides a modern web interface for viewing real-time DMR activity:
+Visit `http://localhost:3000` to access the modern web interface:
 
-1. **Homepage** - Navigate to `http://localhost:3000` to view the last heard activity
-   - See recent DMR transmissions in real-time
-   - View statistics (total entries, 24-hour activity, unique callsigns/talkgroups)
-   - Filter by callsign or talkgroup ID
-   - Auto-refresh every 30 seconds (toggleable)
+- **Real-time Activity**: View recent DMR transmissions as they happen
+- **Live Statistics**: Total entries, 24-hour activity, unique callsigns/talkgroups
+- **Filtering**: Search by callsign or talkgroup ID
+- **Auto-refresh**: Updates every 30 seconds (can be toggled on/off)
+- **Responsive Design**: Works on desktop, tablet, and mobile devices
 
-The web interface is fully responsive and works on desktop, tablet, and mobile devices.
+### API Access
 
-## API Authentication
+#### 1. Public Endpoints (No Authentication)
+Access these directly without an API key:
 
-The API uses API key authentication. To use the API endpoints:
+- `GET /public/lastheard` - Recent lastheard entries (with filtering)
+- `GET /public/stats` - System statistics
+- Example: `/public/lastheard?callsign=EA7KLK&limit=10`
 
-1. **Request an API Key:**
-   - Visit `http://localhost:3000/api/auth/request-key` in your browser
-   - Fill in the form with your name and email
-   - Check your email for a verification link
+#### 2. Request an API Key
 
-2. **Verify Your Email:**
-   - Click the verification link in the email
-   - You will receive your API key via email and on the verification page
+For authenticated API access:
 
-3. **Use the API Key:**
-   - Include the API key in the `X-API-Key` header with all API requests
-   - Example:
-   ```bash
-   curl -H "X-API-Key: your-api-key-here" http://localhost:3000/api/lastheard
-   ```
+1. **Request Key**: Visit `http://localhost:3000/api/auth/request-key`
+2. **Check Email**: Click the verification link sent to your email
+3. **Receive Key**: Your API key will be displayed and emailed to you
+4. **Use Key**: Include in requests via `X-API-Key` header
 
-## API Key Expiration
+```bash
+curl -H "X-API-Key: your-api-key-here" \
+  http://localhost:3000/api/lastheard
+```
 
-API keys automatically expire after 365 days. The system provides:
+**API Key Features:**
+- 365-day validity period
+- Automatic expiry reminders (30, 15, 5 days before)
+- Automatic cleanup of expired keys
+- Last usage tracking
 
-- **Expiry Reminders:** Email notifications are sent 30, 15, and 5 days before expiration
-- **Automatic Cleanup:** Expired keys are automatically deactivated by the scheduler
-- **Grace Period:** Request a new key before expiration to avoid service interruption
-- **Expiry Check:** The authentication middleware validates expiry on each request
+### Admin Panel
 
-The scheduler runs daily to:
-1. Send expiry reminder emails to users
-2. Deactivate API keys that have expired
-3. Maintain system security by removing stale credentials
+Access the password-protected admin panel at `/admin` to manage API keys and verifications.
 
-## Admin Panel
+**Features:**
+- View all API keys with status, dates, and usage
+- Delete API keys
+- View email verifications (verified and pending)
+- Delete old verification records
+- Real-time statistics dashboard
 
-A password-protected admin panel is available at `/admin` for managing API keys and email verifications.
-
-### Accessing the Admin Panel
-
+**Access:**
 1. Navigate to `http://localhost:3000/admin`
-2. Enter the admin credentials (username can be anything, password is from `ADMIN_PASSWORD` in `.env`)
-3. View and manage API keys and email verifications
+2. Username: (anything)
+3. Password: Value of `ADMIN_PASSWORD` from `.env`
 
-### Admin Features
+### API Documentation
 
-- **View API Keys**: See all API keys with their status, creation date, expiration, and last usage
-- **Delete API Keys**: Remove API keys from the system
-- **View Email Verifications**: See all email verification requests (both verified and pending)
-- **Delete Verifications**: Clean up old or invalid verification records
-- **Statistics Dashboard**: Quick overview of total, active, and inactive keys/verifications
-- **Real-time Updates**: Refresh data to see the latest state
-
-![Admin Panel](https://github.com/user-attachments/assets/550482a5-2908-4a67-b8f6-f1bb8327c147)
-
-## API Documentation
-
-Once the server is running, access the interactive Swagger documentation at:
+Interactive Swagger/OpenAPI documentation is available at:
 ```
 http://localhost:3000/api-docs
 ```
 
-## API Endpoints
+Test endpoints directly from your browser with the interactive interface.
 
-### Frontend (Public Access - No Authentication Required)
+## 🔌 API Endpoints
+
+### Frontend (Public - No Authentication)
 - `GET /` - Homepage with real-time lastheard display
 
-### Public API (No Authentication Required)
-- `GET /public/lastheard` - Get recent lastheard entries (with optional filtering)
-  - Query parameters: `limit`, `callsign`, `talkgroup`
-  - Example: `/public/lastheard?callsign=EA7KLK&limit=10`
-- `GET /public/stats` - Get statistics about lastheard data
+### Public API (No Authentication)
+- `GET /public/lastheard` - Recent entries with optional filtering
+  - Query params: `limit`, `callsign`, `talkgroup`
+- `GET /public/stats` - System statistics
 
 ### Authentication
-- `GET /api/auth/request-key` - Display API key request form
+- `GET /api/auth/request-key` - API key request form
 - `POST /api/auth/request-key` - Submit API key request
-- `GET /api/auth/verify-email?token=<token>` - Verify email and receive API key
+- `GET /api/auth/verify-email?token=<token>` - Verify email and receive key
 
-### Admin (Requires Password Authentication)
+### Admin (Password Protected)
 - `GET /admin` - Admin panel interface
 - `GET /admin/api-keys` - List all API keys
 - `DELETE /admin/api-keys/:id` - Delete an API key
 - `GET /admin/verifications` - List all email verifications
-- `DELETE /admin/verifications/:id` - Delete an email verification
+- `DELETE /admin/verifications/:id` - Delete a verification
 
-### Lastheard (Requires API Key)
+### Lastheard (API Key Required)
 - `GET /health` - Health check
-- `GET /api/lastheard` - Get recent lastheard entries
-- `GET /api/lastheard/:id` - Get specific entry by ID
-- `GET /api/lastheard/callsign/:callsign` - Get entries by callsign
-- `POST /api/lastheard` - Create new lastheard entry
+- `GET /api/lastheard` - Recent lastheard entries
+- `GET /api/lastheard/:id` - Specific entry by ID
+- `GET /api/lastheard/callsign/:callsign` - Entries by callsign
+- `POST /api/lastheard` - Create new entry
 
-## Database
+## 💾 Database
 
-The application uses SQLite for data storage. The database file is automatically created at `data/lastheard.db` on first run.
+SQLite database automatically created at `data/lastheard.db` on first run.
 
-### Schema
+### Main Tables
 
-The `lastheard` table includes:
-- `id` - Unique identifier
-- `SourceID` - Source DMR ID
-- `DestinationID` - Destination ID (talkgroup)
-- `SourceCall` - Source callsign
-- `SourceName` - Source name
-- `DestinationCall` - Destination callsign
-- `DestinationName` - Destination name
-- `Start` - Start timestamp (Unix)
-- `Stop` - Stop timestamp (Unix)
-- `TalkerAlias` - Talker alias
-- `duration` - Duration in seconds
-- `created_at` - Record creation timestamp
+**lastheard** - DMR activity records
+- `id`, `SourceID`, `DestinationID`, `SourceCall`, `SourceName`
+- `DestinationCall`, `DestinationName`, `Start`, `Stop`
+- `TalkerAlias`, `duration`, `created_at`
 
-The `api_keys` table includes:
-- `id` - Unique identifier
-- `api_key` - API key (UUID)
-- `name` - User's name
-- `email` - User's email
-- `is_active` - Active status
-- `created_at` - Creation timestamp
-- `expires_at` - Expiration timestamp (365 days from creation)
-- `last_used_at` - Last usage timestamp (updated on each API request)
+**api_keys** - API authentication
+- `id`, `api_key` (UUID), `name`, `email`, `is_active`
+- `created_at`, `expires_at` (365 days), `last_used_at`
 
-The `email_verifications` table includes:
-- `id` - Unique identifier
-- `email` - User's email
-- `name` - User's name
-- `verification_token` - Verification token (UUID)
-- `is_verified` - Verification status
-- `created_at` - Creation timestamp
-- `expires_at` - Expiration timestamp
+**email_verifications** - Email verification tracking
+- `id`, `email`, `name`, `verification_token` (UUID)
+- `is_verified`, `created_at`, `expires_at`
 
-The `talkgroups` table includes:
-- `id` - Unique identifier
-- `talkgroup_id` - Talkgroup ID number
-- `name` - Talkgroup name
-- `country` - Country code (2-letter ISO code or "Global")
-- `continent` - Full continent name (or "Global" for worldwide talkgroups)
-- `full_country_name` - Full country name
-- `last_updated` - Last update timestamp
+**talkgroups** - Talkgroup information
+- `id`, `talkgroup_id`, `name`, `country`, `continent`
+- `full_country_name`, `last_updated`
+- Auto-updated daily at 02:00 AM from Brandmeister CSV data
+- **Note:** Local talkgroup (ID 9) is automatically filtered from all queries
 
-**Note:** The talkgroups table is automatically populated and updated daily at 02:00 AM from the Brandmeister network talkgroups CSV data.
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 bm-lh-nextgen/
 ├── src/
 │   ├── config/
-│   │   └── swagger.js       # Swagger configuration
+│   │   └── swagger.js           # Swagger/OpenAPI configuration
 │   ├── db/
-│   │   └── database.js      # Database initialization
+│   │   └── database.js          # Database initialization
 │   ├── middleware/
-│   │   └── auth.js          # Authentication middleware
+│   │   └── auth.js              # API key authentication
 │   ├── routes/
-│   │   ├── auth.js          # Authentication routes
-│   │   └── lastheard.js     # API routes
+│   │   ├── auth.js              # Authentication routes
+│   │   ├── lastheard.js         # Lastheard API routes
+│   │   ├── public.js            # Public API routes
+│   │   └── talkgroups.js        # Talkgroup routes
 │   ├── services/
-│   │   ├── emailService.js  # Email service
-│   │   └── schedulerService.js  # Expiry scheduler
-│   └── server.js            # Main server file
-├── data/                    # SQLite database directory
-├── .env.example             # Environment variables template
-├── EMAIL_TEMPLATES.md       # Email templates documentation
-├── package.json
-└── README.md
+│   │   ├── emailService.js      # Email sending service
+│   │   ├── schedulerService.js  # Expiry scheduler
+│   │   ├── brandmeisterService.js # Real-time data ingestion
+│   │   └── talkgroupsService.js # Talkgroup management
+│   └── server.js                # Main application entry point
+├── data/                        # SQLite database directory
+├── .github/workflows/           # CI/CD workflows
+├── Dockerfile                   # Multi-stage container build
+├── docker-compose.yml           # Container orchestration
+├── .env.example                 # Environment variables template
+└── package.json                 # Dependencies and scripts
 ```
 
-## Docker Deployment
+## 🐳 Docker Deployment
 
-This application is fully containerized for easy deployment:
+### Quick Start with Docker Compose
 
-### Quick Start with Docker
 ```bash
-# Build the image
-docker build -t bm-lh-nextgen .
+# Configure environment
+cp .env.example .env
+# Edit .env with your settings
 
-# Run with environment variables
-docker run -p 3000:3000 \
-  -e ADMIN_PASSWORD=your-secure-password \
-  -e JWT_SECRET=your-secret-key \
-  bm-lh-nextgen
-
-# Or use docker-compose
+# Start services
 docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
 ```
 
-### Pre-built Images
-Production-ready images are automatically built and published to GitHub Container Registry:
+### Using Pre-built Images
+
+Production-ready images are automatically built and published:
 
 ```bash
-# Pull the latest version
+# Pull latest version
 docker pull ghcr.io/ea7klk/bm-lh-nextgen:latest
 
-# Pull a specific version
+# Pull specific version
 docker pull ghcr.io/ea7klk/bm-lh-nextgen:v1.0.0
+
+# Run with environment file
+docker run -d \
+  -p 3000:3000 \
+  -v $(pwd)/data:/app/data \
+  --env-file .env \
+  ghcr.io/ea7klk/bm-lh-nextgen:latest
 ```
 
-See [DOCKER.md](DOCKER.md) for comprehensive Docker documentation and [GITHUB_WORKFLOWS.md](GITHUB_WORKFLOWS.md) for CI/CD details.
+### Manual Docker Build
 
-## CI/CD Pipeline
+```bash
+# Build image
+docker build -t bm-lh-nextgen .
 
-This repository includes automated GitHub Actions workflows:
+# Run container
+docker run -d \
+  --name bm-lh-nextgen \
+  -p 3000:3000 \
+  -v $(pwd)/data:/app/data \
+  -e ADMIN_PASSWORD=your-secure-password \
+  -e EMAIL_HOST=smtp.gmail.com \
+  -e EMAIL_USER=your-email@gmail.com \
+  -e EMAIL_PASSWORD=your-app-password \
+  -e EMAIL_FROM=your-email@gmail.com \
+  bm-lh-nextgen
+```
 
-### 🏗️ **Continuous Integration**
-- Runs on every push and pull request
-- Node.js testing and linting
-- Docker build validation
-- Security vulnerability scanning
-- Container health checks
+### Docker Features
 
-### 🚀 **Automated Releases**
-- Triggered by version tags (e.g., `v1.0.0`)
-- Multi-architecture builds (AMD64, ARM64)
-- Automatic publishing to GitHub Container Registry
-- Security scanning and SARIF reporting
-- Build summaries and pull commands
+- ✅ **Multi-stage build** - Optimized image size
+- ✅ **Non-root user** - Enhanced security (UID 1001)
+- ✅ **Health checks** - Automatic monitoring
+- ✅ **Data persistence** - Volume mounting for database
+- ✅ **Multi-architecture** - AMD64 and ARM64 support
 
-### 📋 **Workflow Status**
+**Important:** When using docker-compose, ensure your `.env` file is in the same directory as `docker-compose.yml`. Docker Compose will automatically load variables from `.env` and pass them to the container.
+
+See [DOCKER.md](DOCKER.md) for comprehensive Docker documentation.
+
+## 🔄 CI/CD Pipeline
+
+Automated GitHub Actions workflows for continuous integration and deployment.
+
+### Continuous Integration
+**Triggers:** Push to `main`/`develop`, Pull Requests
+
+**Actions:**
+- ✅ Node.js 20 testing
+- ✅ Dependency installation and caching
+- ✅ Docker build validation
+- ✅ Container health checks
+- ✅ Trivy security scanning (PRs only)
+
+### Automated Releases
+**Triggers:** Version tags (e.g., `v1.0.0`), Manual dispatch
+
+**Actions:**
+- ✅ Multi-architecture builds (AMD64, ARM64)
+- ✅ GitHub Container Registry publishing
+- ✅ Anchore security scanning
+- ✅ SARIF security reporting
+- ✅ Automated tagging (latest, version, major.minor)
+
+### Workflow Status
 ![CI](https://github.com/ea7klk/bm-lh-nextgen/workflows/CI/badge.svg)
 ![Docker Build](https://github.com/ea7klk/bm-lh-nextgen/workflows/Docker%20Build%20and%20Push/badge.svg)
 
-### 🔄 **Creating a Release**
+### Creating a Release
+
 ```bash
-# Tag a new version
+# Tag and push a new version
 git tag -a v1.0.0 -m "Release version 1.0.0"
 git push origin v1.0.0
 
-# GitHub Actions will automatically:
-# - Build multi-arch Docker images
-# - Run security scans
-# - Publish to container registry
-# - Generate release artifacts
+# GitHub Actions automatically:
+# - Builds multi-arch Docker images
+# - Runs security scans
+# - Publishes to ghcr.io/ea7klk/bm-lh-nextgen
+# - Tags with version and latest
 ```
 
-## License
+See [GITHUB_WORKFLOWS.md](GITHUB_WORKFLOWS.md) for detailed CI/CD documentation.
 
-MIT License - See LICENSE file for details
+## 📚 Documentation
+
+- **[HISTORY.md](HISTORY.md)** - Complete project development history
+- **[DOCKER.md](DOCKER.md)** - Comprehensive Docker deployment guide
+- **[EMAIL_SETUP.md](EMAIL_SETUP.md)** - Email configuration for different providers
+- **[GITHUB_WORKFLOWS.md](GITHUB_WORKFLOWS.md)** - CI/CD pipeline documentation
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit issues or pull requests.
+
+## 📄 License
+
+MIT License - See [LICENSE](LICENSE) file for details.
+
+---
+
+**Maintainer:** EA7KLK  
+**Repository:** [github.com/ea7klk/bm-lh-nextgen](https://github.com/ea7klk/bm-lh-nextgen)
