@@ -29,6 +29,11 @@ const { db } = require('../db/database');
  *           type: string
  *         description: Filter by country code (2-letter)
  *       - in: query
+ *         name: talkgroup
+ *         schema:
+ *           type: integer
+ *         description: Filter by talkgroup ID
+ *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
@@ -49,6 +54,7 @@ router.get('/lastheard/grouped', (req, res) => {
     const timeRange = req.query.timeRange || '5m';
     const continent = req.query.continent;
     const country = req.query.country;
+    const talkgroup = req.query.talkgroup;
     const limit = Math.min(parseInt(req.query.limit) || 25, 50);
     
     // Calculate start time based on time range
@@ -79,6 +85,12 @@ router.get('/lastheard/grouped', (req, res) => {
         whereClause += ' AND DestinationID IN (SELECT talkgroup_id FROM talkgroups WHERE country = ?)';
         params.push(country);
       }
+    }
+    
+    // Add talkgroup filter
+    if (talkgroup) {
+      whereClause += ' AND DestinationID = ?';
+      params.push(parseInt(talkgroup));
     }
     // When continent is 'All' or not specified, show all talkgroups
     
@@ -335,6 +347,21 @@ router.get('/talkgroups', (req, res) => {
  *           type: string
  *         description: Filter by callsign (supports SQL LIKE patterns with %)
  *       - in: query
+ *         name: continent
+ *         schema:
+ *           type: string
+ *         description: Filter by continent name
+ *       - in: query
+ *         name: country
+ *         schema:
+ *           type: string
+ *         description: Filter by country code (2-letter)
+ *       - in: query
+ *         name: talkgroup
+ *         schema:
+ *           type: integer
+ *         description: Filter by talkgroup ID
+ *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
@@ -354,6 +381,9 @@ router.get('/lastheard/callsigns', (req, res) => {
   try {
     const timeRange = req.query.timeRange || '5m';
     const callsignFilter = req.query.callsign;
+    const continent = req.query.continent;
+    const country = req.query.country;
+    const talkgroup = req.query.talkgroup;
     const limit = Math.min(parseInt(req.query.limit) || 25, 50);
     
     // Calculate start time based on time range
@@ -379,6 +409,24 @@ router.get('/lastheard/callsigns', (req, res) => {
     if (callsignFilter) {
       whereClause += ' AND SourceCall LIKE ?';
       params.push(callsignFilter);
+    }
+    
+    // Add continent filter
+    if (continent && continent !== 'All') {
+      whereClause += ' AND DestinationID IN (SELECT talkgroup_id FROM talkgroups WHERE continent = ?)';
+      params.push(continent);
+      
+      // Add country filter
+      if (country) {
+        whereClause += ' AND DestinationID IN (SELECT talkgroup_id FROM talkgroups WHERE country = ?)';
+        params.push(country);
+      }
+    }
+    
+    // Add talkgroup filter
+    if (talkgroup) {
+      whereClause += ' AND DestinationID = ?';
+      params.push(parseInt(talkgroup));
     }
     
     // Group by callsign and get count and total duration

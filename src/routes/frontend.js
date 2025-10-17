@@ -233,6 +233,15 @@ router.get('/', optionalAuthentication, (req, res) => {
             border-radius: 12px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
+            padding: 20px 0 0 0;
+        }
+        .table-container .chart-title {
+            color: #333;
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0 0 20px 0;
+            padding: 0 20px;
+            text-align: center;
         }
         table {
             width: 100%;
@@ -415,6 +424,7 @@ router.get('/', optionalAuthentication, (req, res) => {
         </div>
 
         <div class="table-container">
+            <h2 class="chart-title">${__('home.talkgroupActivity')}</h2>
             <table>
                 <thead>
                     <tr>
