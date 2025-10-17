@@ -27,6 +27,11 @@
     "destinationId": "Destination ID",
     "count": "Count",
     "totalDuration": "Total Duration",
+    "talkgroupActivity": "Talkgroup activity",
+    "activeCallsigns": "Active callsigns",
+    "callsign": "Callsign",
+    "name": "Name",
+    "qsoCount": "QSO Count",
     "footer": {
       "providedBy": "This website is provided by Volker Kerkhoff, 41089 Dos Hermanas (Spain).",
       "cookies": "We use one own cookie to store your last preferences for 15 days.",

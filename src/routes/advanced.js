@@ -230,6 +230,15 @@ router.get('/', authenticateUser, (req, res) => {
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
             margin-bottom: 20px;
+            padding: 20px 0 0 0;
+        }
+        .table-container .chart-title {
+            color: #333;
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0 0 20px 0;
+            padding: 0 20px;
+            text-align: center;
         }
         table {
             width: 100%;
@@ -458,6 +467,7 @@ router.get('/', authenticateUser, (req, res) => {
         </div>
 
         <div class="table-container">
+            <h2 class="chart-title">${__('home.talkgroupActivity')}</h2>
             <table>
                 <thead>
                     <tr>
@@ -476,13 +486,14 @@ router.get('/', authenticateUser, (req, res) => {
         </div>
 
         <div class="table-container" id="callsignTableContainer">
+            <h2 class="chart-title">${__('home.activeCallsigns')}</h2>
             <table>
                 <thead>
                     <tr>
-                        <th>Callsign</th>
-                        <th>Name</th>
-                        <th>QSO Count</th>
-                        <th>Total Duration</th>
+                        <th>${__('home.callsign')}</th>
+                        <th>${__('home.name')}</th>
+                        <th>${__('home.qsoCount')}</th>
+                        <th>${__('home.totalDuration')}</th>
                     </tr>
                 </thead>
                 <tbody id="callsignTableBody">
@@ -736,12 +747,28 @@ router.get('/', authenticateUser, (req, res) => {
                 const timeRange = document.getElementById('timeRange').value;
                 const callsignSearch = document.getElementById('callsignSearch').value.trim();
                 const maxEntries = document.getElementById('maxEntries').value;
+                const continent = document.getElementById('continent').value;
+                const countrySelect = document.getElementById('country');
+                const country = (continent !== 'All' && continent !== 'Global' && countrySelect.options.length > 1) 
+                    ? countrySelect.value 
+                    : '';
+                const talkgroupInput = document.getElementById('talkgroup').value;
+                const talkgroupId = talkgroupInput ? talkgroupInput.split(' - ')[0].trim() : '';
                 
                 let url = '/public/lastheard/callsigns?timeRange=' + timeRange + '&limit=' + maxEntries;
                 if (callsignSearch) {
                     // Convert wildcard pattern to SQL LIKE pattern
                     const likePattern = callsignSearch.replace(/\\*/g, '%');
                     url += '&callsign=' + encodeURIComponent(likePattern);
+                }
+                if (continent && continent !== 'All') {
+                    url += '&continent=' + encodeURIComponent(continent);
+                }
+                if (country) {
+                    url += '&country=' + encodeURIComponent(country);
+                }
+                if (talkgroupId) {
+                    url += '&talkgroup=' + encodeURIComponent(talkgroupId);
                 }
                 
                 const response = await fetch(url, {
@@ -855,15 +882,18 @@ router.get('/', authenticateUser, (req, res) => {
             document.getElementById('talkgroup').value = '';
             await loadTalkgroups(this.value, '');
             loadGroupedData();
+            loadCallsignData();
         });
         document.getElementById('country').addEventListener('change', async function() {
             const continent = document.getElementById('continent').value;
             document.getElementById('talkgroup').value = '';
             await loadTalkgroups(continent, this.value);
             loadGroupedData();
+            loadCallsignData();
         });
         document.getElementById('talkgroup').addEventListener('change', function() {
             loadGroupedData();
+            loadCallsignData();
         });
         document.getElementById('callsignSearch').addEventListener('input', function() {
             // Debounce the search
