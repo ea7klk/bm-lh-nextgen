@@ -199,6 +199,28 @@ router.get('/', (req, res) => {
 
         <div class="section">
             <h2>
+                Users
+                <button class="refresh-btn" onclick="loadUsers()">🔄 Refresh</button>
+            </h2>
+            <div class="stats" id="userStats">
+                <div class="stat-card">
+                    <div class="stat-label">Total Users</div>
+                    <div class="stat-value" id="totalUsers">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Users</div>
+                    <div class="stat-value" id="activeUsers">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Inactive Users</div>
+                    <div class="stat-value" id="inactiveUsers">-</div>
+                </div>
+            </div>
+            <div id="usersContent" class="loading">Loading...</div>
+        </div>
+
+        <div class="section">
+            <h2>
                 API Keys
                 <button class="refresh-btn" onclick="loadApiKeys()">🔄 Refresh</button>
             </h2>
@@ -426,7 +448,106 @@ router.get('/', (req, res) => {
             return text.replace(/[&<>"']/g, m => map[m]);
         }
 
+        async function loadUsers() {
+            try {
+                const response = await fetch('/admin/users');
+                if (!response.ok) throw new Error('Failed to load users');
+                
+                const data = await response.json();
+                
+                // Update stats
+                document.getElementById('totalUsers').textContent = data.length;
+                document.getElementById('activeUsers').textContent = data.filter(u => u.is_active).length;
+                document.getElementById('inactiveUsers').textContent = data.filter(u => !u.is_active).length;
+                
+                const content = document.getElementById('usersContent');
+                
+                if (data.length === 0) {
+                    content.innerHTML = '<div class="empty">No users found</div>';
+                    return;
+                }
+                
+                let html = '<table>';
+                html += '<thead><tr>';
+                html += '<th>Callsign</th>';
+                html += '<th>Name</th>';
+                html += '<th>Email</th>';
+                html += '<th>Status</th>';
+                html += '<th>Created</th>';
+                html += '<th>Last Login</th>';
+                html += '<th>Actions</th>';
+                html += '</tr></thead><tbody>';
+                
+                data.forEach(user => {
+                    html += '<tr>';
+                    html += '<td><code>' + escapeHtml(user.callsign) + '</code></td>';
+                    html += '<td>' + escapeHtml(user.name) + '</td>';
+                    html += '<td>' + escapeHtml(user.email) + '</td>';
+                    html += '<td><span class="status-' + (user.is_active ? 'active' : 'inactive') + '">' + (user.is_active ? 'Active' : 'Inactive') + '</span></td>';
+                    html += '<td>' + formatDate(user.created_at) + '</td>';
+                    html += '<td>' + formatDate(user.last_login_at) + '</td>';
+                    html += '<td>';
+                    if (user.is_active) {
+                        html += '<button class="delete-btn" style="background: #ffc107; margin-right: 5px;" onclick="toggleUserStatus(' + user.id + ', 0)">Deactivate</button>';
+                    } else {
+                        html += '<button class="delete-btn" style="background: #28a745; margin-right: 5px;" onclick="toggleUserStatus(' + user.id + ', 1)">Activate</button>';
+                    }
+                    html += '<button class="delete-btn" onclick="deleteUser(' + user.id + ')">Delete</button>';
+                    html += '</td>';
+                    html += '</tr>';
+                });
+                
+                html += '</tbody></table>';
+                content.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('usersContent').innerHTML = '<div class="error">Error loading users</div>';
+            }
+        }
+
+        async function toggleUserStatus(id, newStatus) {
+            const action = newStatus ? 'activate' : 'deactivate';
+            if (!confirm('Are you sure you want to ' + action + ' this user?')) return;
+            
+            try {
+                const response = await fetch('/admin/users/' + id + '/status', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ is_active: newStatus })
+                });
+                
+                if (!response.ok) throw new Error('Failed to update user status');
+                
+                showMessage('User ' + action + 'd successfully', 'success');
+                loadUsers();
+            } catch (error) {
+                console.error('Error updating user status:', error);
+                showMessage('Failed to update user status', 'error');
+            }
+        }
+
+        async function deleteUser(id) {
+            if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+            
+            try {
+                const response = await fetch('/admin/users/' + id, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) throw new Error('Failed to delete user');
+                
+                showMessage('User deleted successfully', 'success');
+                loadUsers();
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                showMessage('Failed to delete user', 'error');
+            }
+        }
+
         // Load data on page load
+        loadUsers();
         loadApiKeys();
         loadVerifications();
     </script>
@@ -500,6 +621,72 @@ router.delete('/verifications/:id', (req, res) => {
   } catch (error) {
     console.error('Error deleting verification:', error);
     res.status(500).json({ error: 'Failed to delete verification' });
+  }
+});
+
+/**
+ * Get all users
+ */
+router.get('/users', (req, res) => {
+  try {
+    const stmt = db.prepare('SELECT id, callsign, name, email, is_active, created_at, last_login_at, locale FROM users ORDER BY created_at DESC');
+    const users = stmt.all();
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+/**
+ * Update user status (activate/deactivate)
+ */
+router.put('/users/:id/status', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { is_active } = req.body;
+    
+    if (is_active === undefined) {
+      return res.status(400).json({ error: 'is_active field is required' });
+    }
+    
+    const stmt = db.prepare('UPDATE users SET is_active = ? WHERE id = ?');
+    const result = stmt.run(is_active ? 1 : 0, id);
+    
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({ message: 'User status updated successfully' });
+  } catch (error) {
+    console.error('Error updating user status:', error);
+    res.status(500).json({ error: 'Failed to update user status' });
+  }
+});
+
+/**
+ * Delete a user
+ */
+router.delete('/users/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Delete user sessions first (cascading delete)
+    const deleteSessionsStmt = db.prepare('DELETE FROM user_sessions WHERE user_id = ?');
+    deleteSessionsStmt.run(id);
+    
+    // Delete user
+    const stmt = db.prepare('DELETE FROM users WHERE id = ?');
+    const result = stmt.run(id);
+    
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
   }
 });
 

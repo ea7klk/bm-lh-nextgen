@@ -1,15 +1,15 @@
 const express = require('express');
 const router = express.Router();
+const { authenticateUser } = require('../middleware/userAuth');
 const { generateLanguageSelector } = require('../utils/htmlHelpers');
-const { optionalAuthentication } = require('../middleware/userAuth');
 
 /**
- * Home page - displays grouped lastheard activity
+ * Advanced functions page - requires authentication
  */
-router.get('/', optionalAuthentication, (req, res) => {
+router.get('/', authenticateUser, (req, res) => {
   const locale = res.locals.locale || 'en';
   const __ = req.__;
-  const user = req.user; // Will be null if not logged in
+  const user = req.user;
   
   res.send(`
 <!DOCTYPE html>
@@ -17,7 +17,7 @@ router.get('/', optionalAuthentication, (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${__('home.title')}</title>
+    <title>Advanced Functions - ${__('home.title')}</title>
     <style>
         * {
             margin: 0;
@@ -81,6 +81,8 @@ router.get('/', optionalAuthentication, (req, res) => {
             font-size: 14px;
             font-weight: 600;
             transition: transform 0.2s, box-shadow 0.2s;
+            border: none;
+            cursor: pointer;
         }
         .auth-link:hover {
             transform: translateY(-2px);
@@ -96,25 +98,10 @@ router.get('/', optionalAuthentication, (req, res) => {
         }
         .auth-link.logout {
             background: #dc3545;
-            border: none;
         }
         .auth-link.logout:hover {
             background: #c82333;
             box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
-        }
-        .promo-box {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-            border: 2px solid #667eea;
-            border-radius: 8px;
-            padding: 12px 20px;
-            text-align: center;
-            margin-top: 15px;
-        }
-        .promo-box p {
-            color: #667eea;
-            font-size: 14px;
-            font-weight: 600;
-            margin: 0;
         }
         .controls {
             background: white;
@@ -139,7 +126,7 @@ router.get('/', optionalAuthentication, (req, res) => {
             margin-bottom: 5px;
             font-weight: 600;
         }
-        .controls select {
+        .controls select, .controls input[type="text"] {
             padding: 10px 15px;
             border: 2px solid #e0e0e0;
             border-radius: 6px;
@@ -147,9 +134,12 @@ router.get('/', optionalAuthentication, (req, res) => {
             background: white;
             cursor: pointer;
         }
-        .controls select:focus {
+        .controls select:focus, .controls input[type="text"]:focus {
             outline: none;
             border-color: #667eea;
+        }
+        .controls input[type="text"] {
+            min-width: 200px;
         }
         .chart-container {
             background: white;
@@ -233,6 +223,7 @@ router.get('/', optionalAuthentication, (req, res) => {
             border-radius: 12px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
+            margin-bottom: 20px;
         }
         table {
             width: 100%;
@@ -284,6 +275,56 @@ router.get('/', optionalAuthentication, (req, res) => {
             padding: 40px;
             color: #666;
         }
+        .autocomplete-suggestions {
+            position: absolute;
+            border: 1px solid #e0e0e0;
+            border-top: none;
+            z-index: 99;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: white;
+            max-height: 200px;
+            overflow-y: auto;
+            border-radius: 0 0 6px 6px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .autocomplete-suggestion {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .autocomplete-suggestion:hover {
+            background-color: #f8f9fa;
+        }
+        .search-container {
+            position: relative;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 250px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -125px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
         .footer {
             text-align: center;
             margin-top: 20px;
@@ -322,34 +363,17 @@ router.get('/', optionalAuthentication, (req, res) => {
                 font-size: 11px;
             }
         }
-        @media (min-width: 1200px) {
-            .bar-label {
-                min-width: 250px;
-                max-width: 250px;
-            }
-            .bar-value {
-                min-width: 60px;
-            }
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔊 ${__('home.title')}</h1>
+            <h1>🔊 ${__('home.title')} - Advanced Functions</h1>
             <p>${__('home.subtitle')}</p>
             <div class="user-section">
-                ${user ? `
-                    <span class="user-greeting">${__('user.greeting').replace('{{callsign}}', '<span class="user-callsign">' + user.callsign + '</span>')}</span>
-                    <a href="/advanced" class="auth-link">${__('user.advancedFunctions')}</a>
-                    <button onclick="logout()" class="auth-link logout">${__('user.logoutButton')}</button>
-                ` : `
-                    <a href="/user/login" class="auth-link">${__('user.loginButton')}</a>
-                    <a href="/user/register" class="auth-link secondary">${__('user.registerButton')}</a>
-                    <div class="promo-box">
-                        <p>✨ ${__('user.advancedFunctionsPromo')}</p>
-                    </div>
-                `}
+                <span class="user-greeting">${__('user.greeting').replace('{{callsign}}', '<span class="user-callsign">' + user.callsign + '</span>')}</span>
+                <a href="/" class="auth-link secondary">← Standard Dashboard</a>
+                <button onclick="logout()" class="auth-link logout">${__('user.logoutButton')}</button>
             </div>
         </div>
 
@@ -379,6 +403,18 @@ router.get('/', optionalAuthentication, (req, res) => {
                 <select id="country">
                     <option value="">${__('home.all')}</option>
                 </select>
+            </div>
+            <div class="control-group" id="talkgroupGroup" style="display: none;">
+                <label for="talkgroup">Talkgroup (ID or Name)</label>
+                <div class="search-container">
+                    <input type="text" id="talkgroup" placeholder="Search talkgroup...">
+                    <div id="talkgroupSuggestions" class="autocomplete-suggestions" style="display: none;"></div>
+                </div>
+            </div>
+            <div class="control-group tooltip">
+                <label for="callsignSearch">Callsign Search</label>
+                <input type="text" id="callsignSearch" placeholder="e.g., EA* or EA7KLK">
+                <span class="tooltiptext">Use wildcards: EA* for all EA callsigns, *KLK for ending with KLK</span>
             </div>
             <div class="control-group">
                 <label for="maxEntries">${__('home.maxEntries')}</label>
@@ -432,17 +468,30 @@ router.get('/', optionalAuthentication, (req, res) => {
             </table>
         </div>
 
+        <div class="table-container" id="callsignTableContainer">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Callsign</th>
+                        <th>Name</th>
+                        <th>QSO Count</th>
+                        <th>Total Duration</th>
+                    </tr>
+                </thead>
+                <tbody id="callsignTableBody">
+                    <tr>
+                        <td colspan="4" class="loading">${__('home.loadingData')}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
         <div class="footer">
             <p>
                 ${__('home.footer.providedBy')}<br>
                 ${__('home.footer.cookies')}<br>
                 ${__('home.footer.sourceCode')} <a href="https://github.com/ea7klk/bm-lh-nextgen" target="_blank" rel="noopener noreferrer">${__('home.footer.sourceCodeLink')}</a> ${__('home.footer.license')}<br>
                 ${__('home.footer.contact')} <a href="https://github.com/ea7klk/bm-lh-nextgen/issues" target="_blank" rel="noopener noreferrer">${__('home.footer.githubIssues')}</a> ${__('home.footer.or')} volker at ea7klk dot es
-            </p>
-            <p style="margin-top: 15px;">
-                <a href="/api/auth/request-key">${__('home.footer.requestApiKey')}</a> | 
-                <a href="/api-docs">${__('home.footer.apiDocumentation')}</a> | 
-                <a href="/admin">${__('home.footer.adminPanel')}</a>
             </p>
         </div>
     </div>
@@ -456,6 +505,7 @@ router.get('/', optionalAuthentication, (req, res) => {
         };
         
         let autoRefreshInterval = null;
+        let talkgroupsCache = [];
 
         // Format seconds to hours:minutes:seconds
         function formatDuration(seconds) {
@@ -472,7 +522,28 @@ router.get('/', optionalAuthentication, (req, res) => {
             }
         }
 
-        // Load continents on page load
+        // Logout function
+        async function logout() {
+            try {
+                const response = await fetch('/user/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                if (response.ok) {
+                    window.location.href = '/';
+                } else {
+                    alert('Logout failed. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error during logout:', error);
+                alert('Logout failed. Please try again.');
+            }
+        }
+
+        // Load continents
         async function loadContinents() {
             try {
                 const response = await fetch('/public/continents');
@@ -495,6 +566,7 @@ router.get('/', optionalAuthentication, (req, res) => {
         async function loadCountries(continent) {
             if (continent === 'All' || continent === 'Global') {
                 document.getElementById('countryGroup').style.display = 'none';
+                document.getElementById('talkgroupGroup').style.display = 'none';
                 return;
             }
 
@@ -522,7 +594,66 @@ router.get('/', optionalAuthentication, (req, res) => {
             }
         }
 
-        // Load grouped data
+        // Load talkgroups when country changes
+        async function loadTalkgroups(continent, country) {
+            if (continent === 'All' || continent === 'Global' || !country) {
+                document.getElementById('talkgroupGroup').style.display = 'none';
+                talkgroupsCache = [];
+                return;
+            }
+
+            try {
+                const response = await fetch('/public/talkgroups?continent=' + encodeURIComponent(continent) + '&country=' + encodeURIComponent(country));
+                const talkgroups = await response.json();
+                
+                if (talkgroups.length > 0) {
+                    talkgroupsCache = talkgroups;
+                    document.getElementById('talkgroupGroup').style.display = 'flex';
+                } else {
+                    document.getElementById('talkgroupGroup').style.display = 'none';
+                    talkgroupsCache = [];
+                }
+            } catch (error) {
+                console.error('Error loading talkgroups:', error);
+                document.getElementById('talkgroupGroup').style.display = 'none';
+                talkgroupsCache = [];
+            }
+        }
+
+        // Talkgroup autocomplete
+        document.getElementById('talkgroup').addEventListener('input', function() {
+            const input = this.value.toLowerCase();
+            const suggestions = document.getElementById('talkgroupSuggestions');
+            
+            if (!input) {
+                suggestions.style.display = 'none';
+                return;
+            }
+
+            const matches = talkgroupsCache.filter(tg => 
+                tg.talkgroup_id.toString().includes(input) || 
+                tg.name.toLowerCase().includes(input)
+            ).slice(0, 10);
+
+            if (matches.length > 0) {
+                suggestions.innerHTML = matches.map(tg => 
+                    '<div class="autocomplete-suggestion" onclick="selectTalkgroup(' + tg.talkgroup_id + ', \\'' + tg.name.replace(/'/g, "\\'") + '\\')">' +
+                    tg.talkgroup_id + ' - ' + tg.name +
+                    '</div>'
+                ).join('');
+                suggestions.style.display = 'block';
+            } else {
+                suggestions.style.display = 'none';
+            }
+        });
+
+        function selectTalkgroup(id, name) {
+            document.getElementById('talkgroup').value = id + ' - ' + name;
+            document.getElementById('talkgroupSuggestions').style.display = 'none';
+            loadGroupedData();
+        }
+
+        // Load grouped data (talkgroups)
         async function loadGroupedData() {
             try {
                 const timeRange = document.getElementById('timeRange').value;
@@ -532,6 +663,8 @@ router.get('/', optionalAuthentication, (req, res) => {
                     ? countrySelect.value 
                     : '';
                 const maxEntries = document.getElementById('maxEntries').value;
+                const talkgroupInput = document.getElementById('talkgroup').value;
+                const talkgroupId = talkgroupInput ? talkgroupInput.split(' - ')[0].trim() : '';
                 
                 let url = '/public/lastheard/grouped?timeRange=' + timeRange + '&limit=' + maxEntries;
                 if (continent && continent !== 'All') {
@@ -540,9 +673,9 @@ router.get('/', optionalAuthentication, (req, res) => {
                 if (country) {
                     url += '&country=' + encodeURIComponent(country);
                 }
-                
-                console.log('Loading data with URL:', url);
-                console.log('Continent selected:', continent);
+                if (talkgroupId) {
+                    url += '&talkgroup=' + encodeURIComponent(talkgroupId);
+                }
                 
                 const response = await fetch(url, {
                     headers: {
@@ -575,7 +708,6 @@ router.get('/', optionalAuthentication, (req, res) => {
                     const counts = data.map(item => item.count || 0);
                     updateChart(labels, ids, counts);
                     
-                    // Sort data by duration for duration chart (descending)
                     const sortedByDuration = [...data].sort((a, b) => (b.totalDuration || 0) - (a.totalDuration || 0));
                     const durationLabels = sortedByDuration.map(item => item.destinationName || 'N/A');
                     const durationIds = sortedByDuration.map(item => item.destinationId || 'N/A');
@@ -588,6 +720,50 @@ router.get('/', optionalAuthentication, (req, res) => {
                     '<tr><td colspan="4" class="no-data">Error loading data</td></tr>';
                 updateChart([], [], []);
                 updateDurationChart([], [], []);
+            }
+        }
+
+        // Load callsign data
+        async function loadCallsignData() {
+            try {
+                const timeRange = document.getElementById('timeRange').value;
+                const callsignSearch = document.getElementById('callsignSearch').value.trim();
+                const maxEntries = document.getElementById('maxEntries').value;
+                
+                let url = '/public/lastheard/callsigns?timeRange=' + timeRange + '&limit=' + maxEntries;
+                if (callsignSearch) {
+                    // Convert wildcard pattern to SQL LIKE pattern
+                    const likePattern = callsignSearch.replace(/\*/g, '%');
+                    url += '&callsign=' + encodeURIComponent(likePattern);
+                }
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+                const data = await response.json();
+                
+                const tableBody = document.getElementById('callsignTableBody');
+                
+                if (data.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="4" class="no-data">' + i18n.noData + '</td></tr>';
+                } else {
+                    let html = '';
+                    data.forEach(item => {
+                        html += '<tr>';
+                        html += '<td class="talkgroup-name">' + (item.callsign || 'N/A') + '</td>';
+                        html += '<td>' + (item.name || 'N/A') + '</td>';
+                        html += '<td class="count">' + (item.count || 0) + '</td>';
+                        html += '<td class="duration">' + (item.totalDuration ? formatDuration(item.totalDuration) : '0 sec') + '</td>';
+                        html += '</tr>';
+                    });
+                    tableBody.innerHTML = html;
+                }
+            } catch (error) {
+                console.error('Error loading callsign data:', error);
+                document.getElementById('callsignTableBody').innerHTML = 
+                    '<tr><td colspan="4" class="no-data">Error loading data</td></tr>';
             }
         }
 
@@ -651,128 +827,65 @@ router.get('/', optionalAuthentication, (req, res) => {
             if (autoRefreshInterval) clearInterval(autoRefreshInterval);
             autoRefreshInterval = setInterval(() => {
                 loadGroupedData();
-            }, 10000); // 10 seconds like bm-lh-v2
+                loadCallsignData();
+            }, 10000); // 10 seconds
         }
 
-        // Cookie utility functions for saving preferences
+        // Cookie utility functions
         function setCookie(name, value, days) {
             const expires = new Date();
             expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
             document.cookie = name + '=' + encodeURIComponent(value) + ';expires=' + expires.toUTCString() + ';path=/';
         }
 
-        function getCookie(name) {
-            const nameEQ = name + "=";
-            const ca = document.cookie.split(';');
-            for(let i = 0; i < ca.length; i++) {
-                let c = ca[i];
-                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-                if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
-            }
-            return null;
-        }
-
-        // Logout function
-        async function logout() {
-            try {
-                const response = await fetch('/user/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                });
-                
-                if (response.ok) {
-                    window.location.reload();
-                } else {
-                    alert('Logout failed. Please try again.');
-                }
-            } catch (error) {
-                console.error('Error during logout:', error);
-                alert('Logout failed. Please try again.');
-            }
-        }
-
-        function savePreferences() {
-            const timeRange = document.getElementById('timeRange').value;
-            const continent = document.getElementById('continent').value;
-            const country = document.getElementById('country').value;
-            const maxEntries = document.getElementById('maxEntries').value;
-            
-            setCookie('bm_timeRange', timeRange, 15);
-            setCookie('bm_continent', continent, 15);
-            setCookie('bm_country', country, 15);
-            setCookie('bm_maxEntries', maxEntries, 15);
-        }
-
-        function loadPreferences() {
-            const timeRange = getCookie('bm_timeRange');
-            const continent = getCookie('bm_continent');
-            const country = getCookie('bm_country');
-            const maxEntries = getCookie('bm_maxEntries');
-            
-            if (timeRange && document.getElementById('timeRange')) {
-                document.getElementById('timeRange').value = timeRange;
-            }
-            if (maxEntries && document.getElementById('maxEntries')) {
-                document.getElementById('maxEntries').value = maxEntries;
-            }
-            
-            return { timeRange, continent, country, maxEntries };
-        }
-
         // Event listeners
         document.getElementById('timeRange').addEventListener('change', function() {
-            savePreferences();
             loadGroupedData();
+            loadCallsignData();
         });
         document.getElementById('continent').addEventListener('change', async function() {
             await loadCountries(this.value);
-            savePreferences();
+            document.getElementById('talkgroup').value = '';
+            await loadTalkgroups(this.value, '');
             loadGroupedData();
         });
-        document.getElementById('country').addEventListener('change', function() {
-            savePreferences();
+        document.getElementById('country').addEventListener('change', async function() {
+            const continent = document.getElementById('continent').value;
+            document.getElementById('talkgroup').value = '';
+            await loadTalkgroups(continent, this.value);
             loadGroupedData();
+        });
+        document.getElementById('talkgroup').addEventListener('change', function() {
+            loadGroupedData();
+        });
+        document.getElementById('callsignSearch').addEventListener('input', function() {
+            // Debounce the search
+            clearTimeout(this.searchTimeout);
+            this.searchTimeout = setTimeout(() => {
+                loadCallsignData();
+            }, 500);
         });
         document.getElementById('maxEntries').addEventListener('change', function() {
-            savePreferences();
             loadGroupedData();
+            loadCallsignData();
         });
         document.getElementById('language').addEventListener('change', function() {
             const selectedLang = this.value;
             setCookie('bm_lang', selectedLang, 15);
-            // Reload page to apply new language
             window.location.reload();
         });
 
-        // Initial load
-        loadContinents().then(async () => {
-            // Load saved preferences
-            const savedPrefs = loadPreferences();
-            
-            // Set continent preference if saved
-            if (savedPrefs.continent && document.getElementById('continent')) {
-                const continentSelect = document.getElementById('continent');
-                // Check if the saved continent option exists
-                const option = Array.from(continentSelect.options).find(opt => opt.value === savedPrefs.continent);
-                if (option) {
-                    continentSelect.value = savedPrefs.continent;
-                    // Load countries for the saved continent
-                    await loadCountries(savedPrefs.continent);
-                    
-                    // Set country preference if saved
-                    if (savedPrefs.country && document.getElementById('country')) {
-                        const countrySelect = document.getElementById('country');
-                        const countryOption = Array.from(countrySelect.options).find(opt => opt.value === savedPrefs.country);
-                        if (countryOption) {
-                            countrySelect.value = savedPrefs.country;
-                        }
-                    }
-                }
+        // Close autocomplete when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-container')) {
+                document.getElementById('talkgroupSuggestions').style.display = 'none';
             }
-            
+        });
+
+        // Initial load
+        loadContinents().then(() => {
             loadGroupedData();
+            loadCallsignData();
             setupAutoRefresh();
         });
     </script>

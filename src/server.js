@@ -17,6 +17,7 @@ const talkgroupsRoutes = require('./routes/talkgroups');
 const publicRoutes = require('./routes/public');
 const frontendRoutes = require('./routes/frontend');
 const userRoutes = require('./routes/user');
+const advancedRoutes = require('./routes/advanced');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -42,6 +43,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Frontend routes (public HTML pages)
 app.use('/', frontendRoutes);
+
+// Advanced functions (protected HTML page)
+app.use('/advanced', advancedRoutes);
 
 // Public API routes (no authentication required for viewing)
 app.use('/public', publicRoutes);

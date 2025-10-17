@@ -262,4 +262,146 @@ router.get('/countries', (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /public/talkgroups:
+ *   get:
+ *     summary: Get list of talkgroups (public, no authentication)
+ *     description: Get list of talkgroups for a specific continent and country
+ *     tags:
+ *       - Public
+ *     parameters:
+ *       - in: query
+ *         name: continent
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Continent name
+ *       - in: query
+ *         name: country
+ *         schema:
+ *           type: string
+ *         description: Country code
+ *     responses:
+ *       200:
+ *         description: List of talkgroups
+ */
+router.get('/talkgroups', (req, res) => {
+  try {
+    const continent = req.query.continent;
+    const country = req.query.country;
+    
+    if (!continent || continent === 'All' || continent === 'Global') {
+      return res.json([]);
+    }
+    
+    let query = 'SELECT talkgroup_id, name FROM talkgroups WHERE continent = ?';
+    const params = [continent];
+    
+    if (country) {
+      query += ' AND country = ?';
+      params.push(country);
+    }
+    
+    query += ' ORDER BY talkgroup_id';
+    
+    const stmt = db.prepare(query);
+    const talkgroups = stmt.all(...params);
+    res.json(talkgroups);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /public/lastheard/callsigns:
+ *   get:
+ *     summary: Get grouped lastheard data by callsign (public, no authentication)
+ *     description: Retrieve aggregated lastheard data grouped by callsign for a time period
+ *     tags:
+ *       - Public
+ *     parameters:
+ *       - in: query
+ *         name: timeRange
+ *         schema:
+ *           type: string
+ *           enum: [5m, 15m, 30m, 1h, 2h, 6h, 12h, 24h]
+ *           default: 5m
+ *         description: Time range for data aggregation
+ *       - in: query
+ *         name: callsign
+ *         schema:
+ *           type: string
+ *         description: Filter by callsign (supports SQL LIKE patterns with %)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 25
+ *         description: Number of callsigns to return (max 50)
+ *     responses:
+ *       200:
+ *         description: Grouped lastheard data by callsign
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ */
+router.get('/lastheard/callsigns', (req, res) => {
+  try {
+    const timeRange = req.query.timeRange || '5m';
+    const callsignFilter = req.query.callsign;
+    const limit = Math.min(parseInt(req.query.limit) || 25, 50);
+    
+    // Calculate start time based on time range
+    const now = Math.floor(Date.now() / 1000);
+    let startTime;
+    
+    switch (timeRange) {
+      case '5m': startTime = now - (5 * 60); break;
+      case '15m': startTime = now - (15 * 60); break;
+      case '30m': startTime = now - (30 * 60); break;
+      case '1h': startTime = now - (60 * 60); break;
+      case '2h': startTime = now - (2 * 60 * 60); break;
+      case '6h': startTime = now - (6 * 60 * 60); break;
+      case '12h': startTime = now - (12 * 60 * 60); break;
+      case '24h': startTime = now - (24 * 60 * 60); break;
+      default: startTime = now - (5 * 60);
+    }
+    
+    // Build query
+    let whereClause = 'WHERE Start >= ? AND DestinationID != 9';
+    const params = [startTime];
+    
+    if (callsignFilter) {
+      whereClause += ' AND SourceCall LIKE ?';
+      params.push(callsignFilter);
+    }
+    
+    // Group by callsign and get count and total duration
+    const query = `
+      SELECT 
+        SourceCall as callsign,
+        SourceName as name,
+        COUNT(*) as count,
+        SUM(duration) as totalDuration
+      FROM lastheard
+      ${whereClause}
+      GROUP BY SourceCall, SourceName
+      ORDER BY count DESC
+      LIMIT ?
+    `;
+    params.push(limit);
+    
+    const stmt = db.prepare(query);
+    const entries = stmt.all(...params);
+    res.json(entries);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
