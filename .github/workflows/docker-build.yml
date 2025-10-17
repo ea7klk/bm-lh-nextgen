@@ -140,8 +140,9 @@ jobs:
         echo "Testing frontend..."
         curl -f http://localhost:3000/ || exit 1
         
-        echo "Testing API endpoints..."
-        curl -f http://localhost:3000/public/talkgroups || exit 1
+        echo "Testing public API endpoints..."
+        curl -f http://localhost:3000/public/lastheard || exit 1
+        curl -f http://localhost:3000/public/continents || exit 1
 
     - name: Cleanup test container
       if: always()
