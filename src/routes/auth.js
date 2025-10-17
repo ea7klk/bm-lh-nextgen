@@ -141,15 +141,17 @@ router.post('/request-key', async (req, res) => {
 router.get('/verify-email', async (req, res) => {
   try {
     const { token } = req.query;
+    const locale = res.locals.locale || 'en';
+    const __ = req.__;
 
     if (!token) {
       return res.status(400).send(`
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${locale}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verification Error - Brandmeister Lastheard Next Generation</title>
+    <title>${__('apiKey.verificationError')} - Brandmeister Lastheard Next Generation</title>
     <style>
         * {
             margin: 0;
@@ -208,9 +210,9 @@ router.get('/verify-email', async (req, res) => {
 <body>
     <div class="container">
         <div class="icon error-icon">⚠️</div>
-        <h1>Verification Error</h1>
-        <p>Verification token is required</p>
-        <a href="/api/auth/request-key" class="back-link">Request New API Key</a>
+        <h1>${__('apiKey.verificationError')}</h1>
+        <p>${__('apiKey.verificationTokenRequired')}</p>
+        <a href="/api/auth/request-key" class="back-link">${__('apiKey.requestNewKey')}</a>
     </div>
 </body>
 </html>
@@ -225,11 +227,11 @@ router.get('/verify-email', async (req, res) => {
     if (!verification) {
       return res.status(400).send(`
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${locale}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invalid Token - Brandmeister Lastheard Next Generation</title>
+    <title>${__('apiKey.invalidToken')} - Brandmeister Lastheard Next Generation</title>
     <style>
         * {
             margin: 0;
@@ -288,9 +290,9 @@ router.get('/verify-email', async (req, res) => {
 <body>
     <div class="container">
         <div class="icon error-icon">❌</div>
-        <h1>Invalid Verification Token</h1>
-        <p>The verification token is invalid or does not exist.</p>
-        <a href="/api/auth/request-key" class="back-link">Request New API Key</a>
+        <h1>${__('apiKey.invalidToken')}</h1>
+        <p>${__('apiKey.invalidTokenMessage')}</p>
+        <a href="/api/auth/request-key" class="back-link">${__('apiKey.requestNewKey')}</a>
     </div>
 </body>
 </html>
@@ -300,7 +302,7 @@ router.get('/verify-email', async (req, res) => {
     if (verification.is_verified) {
       return res.status(400).send(`
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${locale}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -800,13 +802,16 @@ router.get('/verify-email', async (req, res) => {
  *               type: string
  */
 router.get('/request-key', (req, res) => {
+  const locale = res.locals.locale || 'en';
+  const __ = req.__;
+  
   res.send(`
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${locale}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Request API Key - Brandmeister Lastheard Next Generation</title>
+    <title>${__('apiKey.requestTitle')} - Brandmeister Lastheard Next Generation</title>
     <style>
         * {
             margin: 0;
@@ -927,34 +932,34 @@ router.get('/request-key', (req, res) => {
 </head>
 <body>
     <div class="container">
-        <h1>Request API Key</h1>
-        <p class="subtitle">Brandmeister Lastheard Next Generation API</p>
+        <h1>${__('apiKey.requestTitle')}</h1>
+        <p class="subtitle">${__('apiKey.subtitle')}</p>
         
         <form id="apiKeyForm">
             <div class="form-group">
-                <label for="name">Name *</label>
-                <input type="text" id="name" name="name" required placeholder="Enter your name">
+                <label for="name">${__('apiKey.name')} *</label>
+                <input type="text" id="name" name="name" required placeholder="${__('apiKey.name')}">
             </div>
             
             <div class="form-group">
-                <label for="email">Email Address *</label>
-                <input type="email" id="email" name="email" required placeholder="Enter your email">
+                <label for="email">${__('apiKey.email')} *</label>
+                <input type="email" id="email" name="email" required placeholder="${__('apiKey.email')}">
             </div>
             
-            <button type="submit" id="submitBtn">Request API Key</button>
+            <button type="submit" id="submitBtn">${__('apiKey.requestButton')}</button>
         </form>
         
         <div id="message" class="message"></div>
         
         <div class="info">
-            <p><strong>How it works:</strong></p>
-            <p>1. Enter your name and email address</p>
-            <p>2. Check your email for a verification link</p>
-            <p>3. Click the link to verify and receive your API key</p>
-            <p>4. Use the API key in the <code>X-API-Key</code> header</p>
+            <p><strong>${__('apiKey.howItWorks')}</strong></p>
+            <p>${__('apiKey.step1')}</p>
+            <p>${__('apiKey.step2')}</p>
+            <p>${__('apiKey.step3')}</p>
+            <p>${__('apiKey.step4')} <code>X-API-Key</code> ${__('apiKey.header')}</p>
         </div>
         
-        <a href="/" class="back-link">← Back to Home</a>
+        <a href="/" class="back-link">${__('apiKey.backToHome')}</a>
     </div>
 
     <script>
@@ -967,7 +972,7 @@ router.get('/request-key', (req, res) => {
             const email = document.getElementById('email').value;
             
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Sending...';
+            submitBtn.textContent = '${__('apiKey.sending')}';
             messageDiv.style.display = 'none';
             
             try {
@@ -997,7 +1002,7 @@ router.get('/request-key', (req, res) => {
                 messageDiv.style.display = 'block';
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Request API Key';
+                submitBtn.textContent = '${__('apiKey.requestButton')}';
             }
         });
     </script>
