@@ -1,17 +1,21 @@
 const express = require('express');
 const router = express.Router();
+const { generateLanguageSelector } = require('../utils/htmlHelpers');
 
 /**
  * Home page - displays grouped lastheard activity
  */
 router.get('/', (req, res) => {
+  const locale = res.locals.locale || 'en';
+  const __ = req.__;
+  
   res.send(`
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${locale}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>What's on in Brandmeister?</title>
+    <title>${__('home.title')}</title>
     <style>
         * {
             margin: 0;
@@ -266,39 +270,39 @@ router.get('/', (req, res) => {
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔊 What's on in Brandmeister?</h1>
-            <p>Real-time activity statistics from the Brandmeister DMR network</p>
+            <h1>🔊 ${__('home.title')}</h1>
+            <p>${__('home.subtitle')}</p>
         </div>
 
         <div class="controls">
             <div class="control-group">
-                <label for="timeRange">Time Range</label>
+                <label for="timeRange">${__('home.timeRange')}</label>
                 <select id="timeRange">
-                    <option value="5m">Last 5 minutes</option>
-                    <option value="15m">Last 15 minutes</option>
-                    <option value="30m" selected>Last 30 minutes</option>
-                    <option value="1h">Last hour</option>
-                    <option value="2h">Last 2 hours</option>
-                    <option value="6h">Last 6 hours</option>
-                    <option value="12h">Last 12 hours</option>
-                    <option value="24h">Last 24 hours</option>
+                    <option value="5m">${__('home.last5min')}</option>
+                    <option value="15m">${__('home.last15min')}</option>
+                    <option value="30m" selected>${__('home.last30min')}</option>
+                    <option value="1h">${__('home.lastHour')}</option>
+                    <option value="2h">${__('home.last2hours')}</option>
+                    <option value="6h">${__('home.last6hours')}</option>
+                    <option value="12h">${__('home.last12hours')}</option>
+                    <option value="24h">${__('home.last24hours')}</option>
                 </select>
             </div>
             <div class="control-group">
-                <label for="continent">Continent</label>
+                <label for="continent">${__('home.continent')}</label>
                 <select id="continent">
-                    <option value="All">All</option>
-                    <option value="Global">Global</option>
+                    <option value="All">${__('home.all')}</option>
+                    <option value="Global">${__('home.global')}</option>
                 </select>
             </div>
             <div class="control-group" id="countryGroup" style="display: none;">
-                <label for="country">Country</label>
+                <label for="country">${__('home.country')}</label>
                 <select id="country">
-                    <option value="">All</option>
+                    <option value="">${__('home.all')}</option>
                 </select>
             </div>
             <div class="control-group">
-                <label for="maxEntries">Maximum Entries</label>
+                <label for="maxEntries">${__('home.maxEntries')}</label>
                 <select id="maxEntries">
                     <option value="10">10</option>
                     <option value="15">15</option>
@@ -309,19 +313,25 @@ router.get('/', (req, res) => {
                     <option value="50">50</option>
                 </select>
             </div>
-        </div>
-
-        <div class="chart-container">
-            <div class="chart-title">Talkgroup total QSO statistics</div>
-            <div class="bar-chart" id="barChart">
-                <div style="text-align: center; color: #666; padding: 40px;">Loading chart...</div>
+            <div class="control-group">
+                <label for="language">${__('home.language')}</label>
+                <select id="language">
+                    ${generateLanguageSelector(locale, __)}
+                </select>
             </div>
         </div>
 
         <div class="chart-container">
-            <div class="chart-title">Talkgroup total QSO duration</div>
+            <div class="chart-title">${__('home.talkgroupQsoStats')}</div>
+            <div class="bar-chart" id="barChart">
+                <div style="text-align: center; color: #666; padding: 40px;">${__('home.loadingChart')}</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">${__('home.talkgroupDurationStats')}</div>
             <div class="bar-chart" id="durationChart">
-                <div style="text-align: center; color: #666; padding: 40px;">Loading chart...</div>
+                <div style="text-align: center; color: #666; padding: 40px;">${__('home.loadingChart')}</div>
             </div>
         </div>
 
@@ -329,15 +339,15 @@ router.get('/', (req, res) => {
             <table>
                 <thead>
                     <tr>
-                        <th>Destination Name</th>
-                        <th>Destination ID</th>
-                        <th>Count</th>
-                        <th>Total Duration</th>
+                        <th>${__('home.destinationName')}</th>
+                        <th>${__('home.destinationId')}</th>
+                        <th>${__('home.count')}</th>
+                        <th>${__('home.totalDuration')}</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
                     <tr>
-                        <td colspan="4" class="loading">Loading data...</td>
+                        <td colspan="4" class="loading">${__('home.loadingData')}</td>
                     </tr>
                 </tbody>
             </table>
@@ -345,20 +355,27 @@ router.get('/', (req, res) => {
 
         <div class="footer">
             <p>
-                This website is provided by Volker Kerkhoff, 41089 Dos Hermanas (Spain).<br>
-                We use one own cookie to store your last preferences for 15 days.<br>
-                The complete <a href="https://github.com/ea7klk/bm-lh-nextgen" target="_blank" rel="noopener noreferrer">source code is available on GitHub</a> and is under MIT license.<br>
-                Please contact me via <a href="https://github.com/ea7klk/bm-lh-nextgen/issues" target="_blank" rel="noopener noreferrer">GitHub issues</a> or volker at ea7klk dot es
+                ${__('home.footer.providedBy')}<br>
+                ${__('home.footer.cookies')}<br>
+                ${__('home.footer.sourceCode')} <a href="https://github.com/ea7klk/bm-lh-nextgen" target="_blank" rel="noopener noreferrer">${__('home.footer.sourceCodeLink')}</a> ${__('home.footer.license')}<br>
+                ${__('home.footer.contact')} <a href="https://github.com/ea7klk/bm-lh-nextgen/issues" target="_blank" rel="noopener noreferrer">${__('home.footer.githubIssues')}</a> ${__('home.footer.or')} volker at ea7klk dot es
             </p>
             <p style="margin-top: 15px;">
-                <a href="/api/auth/request-key">Request API Key</a> | 
-                <a href="/api-docs">API Documentation</a> | 
-                <a href="/admin">Admin Panel</a>
+                <a href="/api/auth/request-key">${__('home.footer.requestApiKey')}</a> | 
+                <a href="/api-docs">${__('home.footer.apiDocumentation')}</a> | 
+                <a href="/admin">${__('home.footer.adminPanel')}</a>
             </p>
         </div>
     </div>
 
     <script>
+        // Translations for JavaScript
+        const i18n = {
+            noData: "${__('home.noData')}",
+            noDataDisplay: "${__('home.noDataDisplay')}",
+            loadingData: "${__('home.loadingData')}"
+        };
+        
         let autoRefreshInterval = null;
 
         // Format seconds to hours:minutes:seconds
@@ -458,7 +475,7 @@ router.get('/', (req, res) => {
                 const tableBody = document.getElementById('tableBody');
                 
                 if (data.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="4" class="no-data">No data available for selected time range and filters</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="4" class="no-data">' + i18n.noData + '</td></tr>';
                     updateChart([], [], []);
                     updateDurationChart([], [], []);
                 } else {
@@ -500,7 +517,7 @@ router.get('/', (req, res) => {
             const barChart = document.getElementById('barChart');
             
             if (data.length === 0) {
-                barChart.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 200px; color: #666; font-size: 18px; font-weight: bold;">No data to display</div>';
+                barChart.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 200px; color: #666; font-size: 18px; font-weight: bold;">' + i18n.noDataDisplay + '</div>';
                 return;
             }
             
@@ -527,7 +544,7 @@ router.get('/', (req, res) => {
             const durationChart = document.getElementById('durationChart');
             
             if (data.length === 0) {
-                durationChart.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 200px; color: #666; font-size: 18px; font-weight: bold;">No data to display</div>';
+                durationChart.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 200px; color: #666; font-size: 18px; font-weight: bold;">' + i18n.noDataDisplay + '</div>';
                 return;
             }
             
@@ -621,6 +638,12 @@ router.get('/', (req, res) => {
         document.getElementById('maxEntries').addEventListener('change', function() {
             savePreferences();
             loadGroupedData();
+        });
+        document.getElementById('language').addEventListener('change', function() {
+            const selectedLang = this.value;
+            setCookie('bm_lang', selectedLang, 15);
+            // Reload page to apply new language
+            window.location.reload();
         });
 
         // Initial load
