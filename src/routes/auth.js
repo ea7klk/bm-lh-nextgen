@@ -465,8 +465,8 @@ router.get('/verify-email', async (req, res) => {
     const apiKey = uuidv4();
     const expiresAt = Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60); // 365 days from now
 
-    // Get locale from verification record (use already declared locale from top of function or verification record)
-    const userLocale = verification.locale || locale || 'en';
+    // Use verification record locale or fallback to current request locale
+    const userLocale = verification.locale || locale;
 
     // Insert API key with locale
     const insertStmt = db.prepare(`
