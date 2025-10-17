@@ -22,6 +22,37 @@ function cleanupOldRecords() {
   }
 }
 
+// Clean up expired password reset tokens and email change tokens
+function cleanupExpiredTokens() {
+  const currentTime = Math.floor(Date.now() / 1000);
+  
+  try {
+    // Delete expired password reset tokens
+    const deleteResetTokensStmt = db.prepare(`
+      DELETE FROM password_reset_tokens 
+      WHERE expires_at < ?
+    `);
+    const resetResult = deleteResetTokensStmt.run(currentTime);
+    
+    if (resetResult.changes > 0) {
+      console.log(`Cleaned up ${resetResult.changes} expired password reset tokens`);
+    }
+
+    // Delete expired email change tokens
+    const deleteEmailTokensStmt = db.prepare(`
+      DELETE FROM email_change_tokens 
+      WHERE expires_at < ?
+    `);
+    const emailResult = deleteEmailTokensStmt.run(currentTime);
+    
+    if (emailResult.changes > 0) {
+      console.log(`Cleaned up ${emailResult.changes} expired email change tokens`);
+    }
+  } catch (error) {
+    console.error('Error cleaning up expired tokens:', error);
+  }
+}
+
 // Check for keys that need expiry reminders or removal
 async function checkApiKeyExpiry() {
   const currentTime = Math.floor(Date.now() / 1000);
@@ -117,6 +148,7 @@ async function startScheduler() {
   // Run immediately on startup
   checkApiKeyExpiry();
   cleanupOldRecords();
+  cleanupExpiredTokens();
   
   // Check if talkgroups table is empty and populate if needed
   await initializeTalkgroups();
@@ -128,6 +160,7 @@ async function startScheduler() {
   setInterval(() => {
     checkApiKeyExpiry();
     cleanupOldRecords();
+    cleanupExpiredTokens();
   }, 24 * 60 * 60 * 1000);
   
   console.log('Scheduler started - checking every 24 hours');
@@ -181,6 +214,7 @@ module.exports = {
   startScheduler,
   checkApiKeyExpiry,
   cleanupOldRecords,
+  cleanupExpiredTokens,
   runTalkgroupsUpdate,
   initializeTalkgroups,
 };
