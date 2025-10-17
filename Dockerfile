@@ -3,7 +3,7 @@
 FROM node:20-alpine AS builder
 
 # Install build dependencies
-RUN apk add --no-cache python3 make g++ sqlite
+RUN apk add --no-cache python3 make g++ sqlite postgresql-client
 
 # Set working directory
 WORKDIR /app
@@ -18,7 +18,7 @@ RUN npm ci && npm cache clean --force
 FROM node:20-alpine AS production
 
 # Install runtime dependencies
-RUN apk add --no-cache sqlite wget
+RUN apk add --no-cache sqlite wget postgresql-client
 
 # Set working directory
 WORKDIR /app
@@ -46,7 +46,11 @@ COPY --chown=nodejs:nodejs <<EOF /app/entrypoint.sh
 # Generate .env file from environment variables if it does not exist
 if [ ! -f /app/.env ]; then
     echo "PORT=\${PORT:-3000}" > /app/.env
-    echo "DB_PATH=\${DB_PATH:-./data/lastheard.db}" >> /app/.env
+    echo "DB_HOST=\${DB_HOST:-bm-lh-postgres}" >> /app/.env
+    echo "DB_PORT=\${DB_PORT:-5432}" >> /app/.env
+    echo "DB_USER=\${DB_USER:-bm_lh_user}" >> /app/.env
+    echo "DB_PASSWORD=\${DB_PASSWORD:-changeme}" >> /app/.env
+    echo "DB_NAME=\${DB_NAME:-bm_lh_nextgen}" >> /app/.env
     echo "ADMIN_PASSWORD=\${ADMIN_PASSWORD:-changeme}" >> /app/.env
     echo "JWT_SECRET=\${JWT_SECRET:-your-secret-key-here}" >> /app/.env
     echo "EMAIL_ENABLED=\${EMAIL_ENABLED:-false}" >> /app/.env

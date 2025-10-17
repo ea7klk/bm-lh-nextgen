@@ -1,10 +1,28 @@
 services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: bm-lh-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-bm_lh_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme}
+      - POSTGRES_DB=${POSTGRES_DB:-bm_lh_nextgen}
+    volumes:
+      # Mount db directory for PostgreSQL data persistence
+      - ./db:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bm_lh_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   bm-lh-nextgen:
     build: .
+    container_name: bm-lh-nextgen
     ports:
       - "${PORT:-3000}:3000"
     volumes:
-      # Mount data directory for database persistence
+      # Mount data directory for SQLite migration and backup
       - ./data:/app/data
     env_file:
       # Load environment variables from .env file
@@ -14,6 +32,12 @@ services:
       # Server Configuration
       - PORT=${PORT:-3000}
       - BASE_URL=${BASE_URL:-http://localhost:3000}
+      # Database Configuration
+      - DB_HOST=bm-lh-postgres
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USER=${POSTGRES_USER:-bm_lh_user}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-changeme}
+      - DB_NAME=${POSTGRES_DB:-bm_lh_nextgen}
       # Email Configuration
       - EMAIL_HOST=${EMAIL_HOST}
       - EMAIL_PORT=${EMAIL_PORT:-587}
@@ -24,6 +48,9 @@ services:
       - EMAIL_REQUIRE_TLS=${EMAIL_REQUIRE_TLS:-false}
       # Admin Configuration
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]

@@ -82,11 +82,11 @@ const { authenticateApiKey } = require('../middleware/auth');
  *       403:
  *         description: Invalid or inactive API key
  */
-router.get('/lastheard', authenticateApiKey, (req, res) => {
+router.get('/lastheard', authenticateApiKey, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
-    const stmt = db.prepare('SELECT * FROM lastheard WHERE DestinationID != 9 ORDER BY Start DESC LIMIT ?');
-    const entries = stmt.all(limit);
+    const stmt = db.prepare('SELECT * FROM lastheard WHERE "DestinationID" != 9 ORDER BY "Start" DESC LIMIT ?');
+    const entries = await stmt.all(limit);
     res.json(entries);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -122,10 +122,10 @@ router.get('/lastheard', authenticateApiKey, (req, res) => {
  *       404:
  *         description: Entry not found
  */
-router.get('/lastheard/:id', authenticateApiKey, (req, res) => {
+router.get('/lastheard/:id', authenticateApiKey, async (req, res) => {
   try {
     const stmt = db.prepare('SELECT * FROM lastheard WHERE id = ?');
-    const entry = stmt.get(req.params.id);
+    const entry = await stmt.get(req.params.id);
     
     if (!entry) {
       return res.status(404).json({ error: 'Entry not found' });
@@ -191,7 +191,7 @@ router.get('/lastheard/:id', authenticateApiKey, (req, res) => {
  *       403:
  *         description: Invalid or inactive API key
  */
-router.post('/lastheard', authenticateApiKey, (req, res) => {
+router.post('/lastheard', authenticateApiKey, async (req, res) => {
   try {
     const { SourceID, DestinationID, SourceCall, SourceName, DestinationCall, DestinationName, Start, Stop, TalkerAlias, duration } = req.body;
     
@@ -200,13 +200,13 @@ router.post('/lastheard', authenticateApiKey, (req, res) => {
     }
     
     const stmt = db.prepare(`
-      INSERT INTO lastheard (SourceID, DestinationID, SourceCall, SourceName, DestinationCall, DestinationName, Start, Stop, TalkerAlias, duration)
+      INSERT INTO lastheard ("SourceID", "DestinationID", "SourceCall", "SourceName", "DestinationCall", "DestinationName", "Start", "Stop", "TalkerAlias", duration)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
-    const result = stmt.run(SourceID, DestinationID, SourceCall, SourceName || null, DestinationCall || null, DestinationName || null, Start, Stop || null, TalkerAlias || null, duration || null);
+    const result = await stmt.run(SourceID, DestinationID, SourceCall, SourceName || null, DestinationCall || null, DestinationName || null, Start, Stop || null, TalkerAlias || null, duration || null);
     
-    const newEntry = db.prepare('SELECT * FROM lastheard WHERE id = ?').get(result.lastInsertRowid);
+    const newEntry = await db.prepare('SELECT * FROM lastheard WHERE id = ?').get(result.lastInsertRowid);
     
     res.status(201).json(newEntry);
   } catch (error) {
@@ -249,11 +249,11 @@ router.post('/lastheard', authenticateApiKey, (req, res) => {
  *       403:
  *         description: Invalid or inactive API key
  */
-router.get('/lastheard/callsign/:callsign', authenticateApiKey, (req, res) => {
+router.get('/lastheard/callsign/:callsign', authenticateApiKey, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
-    const stmt = db.prepare('SELECT * FROM lastheard WHERE SourceCall = ? AND DestinationID != 9 ORDER BY Start DESC LIMIT ?');
-    const entries = stmt.all(req.params.callsign, limit);
+    const stmt = db.prepare('SELECT * FROM lastheard WHERE "SourceCall" = ? AND "DestinationID" != 9 ORDER BY "Start" DESC LIMIT ?');
+    const entries = await stmt.all(req.params.callsign, limit);
     res.json(entries);
   } catch (error) {
     res.status(500).json({ error: error.message });
