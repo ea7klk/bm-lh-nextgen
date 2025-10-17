@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const i18n = require('../config/i18n');
 
 // Email configuration from environment variables
 const EMAIL_HOST = process.env.EMAIL_HOST || 'smtp.example.com';
@@ -63,25 +64,28 @@ function createTransporter() {
 
 const transporter = createTransporter();
 
-async function sendVerificationEmail(email, name, verificationToken) {
+async function sendVerificationEmail(email, name, verificationToken, locale = 'en') {
   if (!transporter) {
     console.error('Email transporter not available. Please check email configuration.');
     return false;
   }
+
+  // Set locale for translations
+  i18n.setLocale(locale);
 
   const verificationLink = `${BASE_URL}/api/auth/verify-email?token=${verificationToken}`;
   
   const mailOptions = {
     from: EMAIL_FROM,
     to: email,
-    subject: 'Verify your email for Brandmeister Lastheard API',
+    subject: i18n.__('email.verifyEmailSubject'),
     html: `
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${locale}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify Your Email</title>
+    <title>${i18n.__('email.verifyEmailTitle')}</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background-color: #f5f5f5;">
     <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
@@ -99,37 +103,37 @@ async function sendVerificationEmail(email, name, verificationToken) {
                     <!-- Content -->
                     <tr>
                         <td style="padding: 40px;">
-                            <h2 style="color: #333333; margin: 0 0 20px; font-size: 24px;">Verify Your Email</h2>
+                            <h2 style="color: #333333; margin: 0 0 20px; font-size: 24px;">${i18n.__('email.verifyEmailTitle')}</h2>
                             
-                            <p style="color: #666666; line-height: 1.6; margin: 0 0 20px; font-size: 16px;">Hello ${name},</p>
+                            <p style="color: #666666; line-height: 1.6; margin: 0 0 20px; font-size: 16px;">${i18n.__('email.hello')} ${name},</p>
                             
-                            <p style="color: #666666; line-height: 1.6; margin: 0 0 30px; font-size: 16px;">Thank you for requesting an API key for the Brandmeister Lastheard Next Generation API. To complete your registration and receive your API key, please verify your email address by clicking the button below:</p>
+                            <p style="color: #666666; line-height: 1.6; margin: 0 0 30px; font-size: 16px;">${i18n.__('email.verifyEmailBody')}</p>
                             
                             <table width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td align="center" style="padding: 0 0 30px;">
-                                        <a href="${verificationLink}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">Verify Email Address</a>
+                                        <a href="${verificationLink}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">${i18n.__('email.verifyButton')}</a>
                                     </td>
                                 </tr>
                             </table>
                             
-                            <p style="color: #999999; line-height: 1.6; margin: 0 0 20px; font-size: 14px;">If the button doesn't work, copy and paste this link into your browser:</p>
+                            <p style="color: #999999; line-height: 1.6; margin: 0 0 20px; font-size: 14px;">${i18n.__('email.buttonNotWork')}</p>
                             
                             <p style="color: #667eea; line-height: 1.6; margin: 0 0 30px; font-size: 14px; word-break: break-all;">${verificationLink}</p>
                             
                             <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 16px; border-radius: 6px; margin: 0 0 30px;">
-                                <p style="color: #856404; margin: 0; font-size: 14px; line-height: 1.6;"><strong>⏱️ This link will expire in 24 hours.</strong></p>
+                                <p style="color: #856404; margin: 0; font-size: 14px; line-height: 1.6;"><strong>⏱️ ${i18n.__('email.linkExpires')}</strong></p>
                             </div>
                             
-                            <p style="color: #999999; line-height: 1.6; margin: 0; font-size: 14px;">If you did not request an API key, please ignore this email.</p>
+                            <p style="color: #999999; line-height: 1.6; margin: 0; font-size: 14px;">${i18n.__('email.didNotRequest')}</p>
                         </td>
                     </tr>
                     
                     <!-- Footer -->
                     <tr>
                         <td style="background-color: #f8f9fa; padding: 30px 40px; text-align: center; border-top: 1px solid #e0e0e0;">
-                            <p style="color: #999999; margin: 0; font-size: 14px; line-height: 1.6;">Brandmeister Lastheard Next Generation API</p>
-                            <p style="color: #999999; margin: 10px 0 0; font-size: 12px;">This is an automated email. Please do not reply.</p>
+                            <p style="color: #999999; margin: 0; font-size: 14px; line-height: 1.6;">${i18n.__('email.brandmeisterApi')}</p>
+                            <p style="color: #999999; margin: 10px 0 0; font-size: 12px;">${i18n.__('email.automatedEmail')}</p>
                         </td>
                     </tr>
                 </table>
@@ -140,22 +144,22 @@ async function sendVerificationEmail(email, name, verificationToken) {
 </html>
     `,
     text: `
-Brandmeister Lastheard Next Generation API
-Verify Your Email
+${i18n.__('email.brandmeisterApi')}
+${i18n.__('email.verifyEmailTitle')}
 
-Hello ${name},
+${i18n.__('email.hello')} ${name},
 
-Thank you for requesting an API key for the Brandmeister Lastheard Next Generation API. To complete your registration and receive your API key, please verify your email address by clicking the link below:
+${i18n.__('email.verifyEmailBody')}
 
 ${verificationLink}
 
-⏱️ This link will expire in 24 hours.
+⏱️ ${i18n.__('email.linkExpires')}
 
-If you did not request an API key, please ignore this email.
+${i18n.__('email.didNotRequest')}
 
 ---
-Brandmeister Lastheard Next Generation API
-This is an automated email. Please do not reply.
+${i18n.__('email.brandmeisterApi')}
+${i18n.__('email.automatedEmail')}
     `,
   };
 
@@ -184,16 +188,22 @@ This is an automated email. Please do not reply.
   }
 }
 
-async function sendApiKeyEmail(email, name, apiKey) {
+async function sendApiKeyEmail(email, name, apiKey, locale = 'en') {
   if (!transporter) {
     console.error('Email transporter not available. Please check email configuration.');
     return false;
   }
 
+  // Set locale for translations
+  i18n.setLocale(locale);
+
   // Calculate expiry date (365 days from now)
   const expiryDate = new Date();
   expiryDate.setDate(expiryDate.getDate() + 365);
-  const expiryDateFormatted = expiryDate.toLocaleDateString('en-US', { 
+  
+  // Use locale-specific date formatting
+  const localeMap = { 'en': 'en-US', 'es': 'es-ES', 'de': 'de-DE', 'fr': 'fr-FR' };
+  const expiryDateFormatted = expiryDate.toLocaleDateString(localeMap[locale] || 'en-US', { 
     year: 'numeric', 
     month: 'long', 
     day: 'numeric' 
@@ -202,14 +212,14 @@ async function sendApiKeyEmail(email, name, apiKey) {
   const mailOptions = {
     from: EMAIL_FROM,
     to: email,
-    subject: 'Your Brandmeister Lastheard API Key',
+    subject: i18n.__('email.apiKeyReadySubject'),
     html: `
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${locale}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your API Key</title>
+    <title>${i18n.__('email.apiKeyReadyTitle')}</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background-color: #f5f5f5;">
     <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
@@ -220,37 +230,37 @@ async function sendApiKeyEmail(email, name, apiKey) {
                     <tr>
                         <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 40px 30px; text-align: center;">
                             <div style="font-size: 48px; margin-bottom: 10px;">🎉</div>
-                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Your API Key is Ready!</h1>
+                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">${i18n.__('email.apiKeyReadyTitle')}</h1>
                         </td>
                     </tr>
                     
                     <!-- Content -->
                     <tr>
                         <td style="padding: 40px;">
-                            <p style="color: #666666; line-height: 1.6; margin: 0 0 30px; font-size: 16px;">Hello ${name},</p>
+                            <p style="color: #666666; line-height: 1.6; margin: 0 0 30px; font-size: 16px;">${i18n.__('email.hello')} ${name},</p>
                             
-                            <p style="color: #666666; line-height: 1.6; margin: 0 0 30px; font-size: 16px;">Your email has been verified successfully! Here is your API key for accessing the Brandmeister Lastheard Next Generation API:</p>
+                            <p style="color: #666666; line-height: 1.6; margin: 0 0 30px; font-size: 16px;">${i18n.__('email.emailVerifiedSuccess')}</p>
                             
                             <!-- API Key Box -->
                             <div style="background-color: #f8f9fa; border: 2px dashed #667eea; border-radius: 8px; padding: 20px; margin: 0 0 30px;">
-                                <p style="color: #666666; margin: 0 0 10px; font-size: 14px; font-weight: 600; text-transform: uppercase;">Your API Key</p>
+                                <p style="color: #666666; margin: 0 0 10px; font-size: 14px; font-weight: 600; text-transform: uppercase;">${i18n.__('email.yourApiKey')}</p>
                                 <p style="color: #333333; margin: 0; font-family: 'Courier New', monospace; font-size: 16px; word-break: break-all; background-color: #ffffff; padding: 12px; border-radius: 6px; border: 1px solid #e0e0e0;">${apiKey}</p>
                             </div>
 
                             <!-- Expiry Info -->
                             <div style="background-color: #f0f0f0; border-radius: 6px; padding: 12px; margin: 0 0 30px; text-align: center;">
-                                <p style="color: #666666; margin: 0; font-size: 14px;"><strong>Valid until:</strong> ${expiryDateFormatted}</p>
+                                <p style="color: #666666; margin: 0; font-size: 14px;"><strong>${i18n.__('email.validUntil')}</strong> ${expiryDateFormatted}</p>
                             </div>
                             
                             <!-- Warning Box -->
                             <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 16px; border-radius: 6px; margin: 0 0 30px;">
-                                <p style="color: #856404; margin: 0; font-size: 14px; line-height: 1.6;"><strong>⚠️ Important:</strong> Please keep this API key safe and do not share it with others. You will receive reminder emails before expiration.</p>
+                                <p style="color: #856404; margin: 0; font-size: 14px; line-height: 1.6;"><strong>⚠️ ${i18n.__('email.importantWarning')}</strong> ${i18n.__('email.keepSafe')}</p>
                             </div>
                             
                             <!-- Usage Instructions -->
-                            <h3 style="color: #333333; margin: 0 0 15px; font-size: 18px;">How to Use Your API Key</h3>
+                            <h3 style="color: #333333; margin: 0 0 15px; font-size: 18px;">${i18n.__('email.howToUseTitle')}</h3>
                             
-                            <p style="color: #666666; line-height: 1.6; margin: 0 0 15px; font-size: 14px;">Include your API key in the <code style="background-color: #f8f9fa; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace;">X-API-Key</code> header with all API requests.</p>
+                            <p style="color: #666666; line-height: 1.6; margin: 0 0 15px; font-size: 14px;">${i18n.__('email.includeKeyInHeader')} <code style="background-color: #f8f9fa; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace;">X-API-Key</code> ${i18n.__('email.headerText')}</p>
                             
                             <!-- Example Code -->
                             <div style="background-color: #2d2d2d; border-radius: 6px; padding: 16px; margin: 0 0 30px; overflow-x: auto;">
@@ -260,19 +270,19 @@ async function sendApiKeyEmail(email, name, apiKey) {
                             
                             <!-- Info Box -->
                             <div style="background-color: #e7f3ff; border-left: 4px solid #667eea; padding: 16px; border-radius: 6px; margin: 0 0 30px;">
-                                <p style="color: #333333; margin: 0 0 10px; font-size: 14px; line-height: 1.6;"><strong>📚 API Documentation</strong></p>
-                                <p style="color: #666666; margin: 0; font-size: 14px; line-height: 1.6;">Visit <a href="${BASE_URL}/api-docs" style="color: #667eea; text-decoration: none;">${BASE_URL}/api-docs</a> for complete API documentation.</p>
+                                <p style="color: #333333; margin: 0 0 10px; font-size: 14px; line-height: 1.6;"><strong>📚 ${i18n.__('email.apiDocumentation')}</strong></p>
+                                <p style="color: #666666; margin: 0; font-size: 14px; line-height: 1.6;">${i18n.__('email.visitDocs')} <a href="${BASE_URL}/api-docs" style="color: #667eea; text-decoration: none;">${BASE_URL}/api-docs</a> ${i18n.__('email.forCompleteDocs')}</p>
                             </div>
                             
-                            <p style="color: #999999; line-height: 1.6; margin: 0; font-size: 14px;">If you have any questions or need assistance, feel free to reach out to our support team.</p>
+                            <p style="color: #999999; line-height: 1.6; margin: 0; font-size: 14px;">${i18n.__('email.questionsContact')}</p>
                         </td>
                     </tr>
                     
                     <!-- Footer -->
                     <tr>
                         <td style="background-color: #f8f9fa; padding: 30px 40px; text-align: center; border-top: 1px solid #e0e0e0;">
-                            <p style="color: #999999; margin: 0; font-size: 14px; line-height: 1.6;">Brandmeister Lastheard Next Generation API</p>
-                            <p style="color: #999999; margin: 10px 0 0; font-size: 12px;">This is an automated email. Please do not reply.</p>
+                            <p style="color: #999999; margin: 0; font-size: 14px; line-height: 1.6;">${i18n.__('email.brandmeisterApi')}</p>
+                            <p style="color: #999999; margin: 10px 0 0; font-size: 12px;">${i18n.__('email.automatedEmail')}</p>
                         </td>
                     </tr>
                 </table>
@@ -283,35 +293,35 @@ async function sendApiKeyEmail(email, name, apiKey) {
 </html>
     `,
     text: `
-Brandmeister Lastheard Next Generation API
-🎉 Your API Key is Ready!
+${i18n.__('email.brandmeisterApi')}
+🎉 ${i18n.__('email.apiKeyReadyTitle')}
 
-Hello ${name},
+${i18n.__('email.hello')} ${name},
 
-Your email has been verified successfully! Here is your API key for accessing the Brandmeister Lastheard Next Generation API:
+${i18n.__('email.emailVerifiedSuccess')}
 
-YOUR API KEY:
+${i18n.__('email.yourApiKey').toUpperCase()}:
 ${apiKey}
 
-Valid until: ${expiryDateFormatted}
+${i18n.__('email.validUntil')} ${expiryDateFormatted}
 
-⚠️ IMPORTANT: Please keep this API key safe and do not share it with others. You will receive reminder emails before expiration.
+⚠️ ${i18n.__('email.importantWarning').toUpperCase()}: ${i18n.__('email.keepSafe')}
 
-HOW TO USE YOUR API KEY
-Include your API key in the X-API-Key header with all API requests.
+${i18n.__('email.howToUseTitle').toUpperCase()}
+${i18n.__('email.includeKeyInHeader')} X-API-Key ${i18n.__('email.headerText')}
 
 Example:
 curl -H "X-API-Key: ${apiKey}" \\
      ${BASE_URL}/api/lastheard
 
-📚 API Documentation
-Visit ${BASE_URL}/api-docs for complete API documentation.
+📚 ${i18n.__('email.apiDocumentation')}
+${i18n.__('email.visitDocs')} ${BASE_URL}/api-docs ${i18n.__('email.forCompleteDocs')}
 
-If you have any questions or need assistance, feel free to reach out to our support team.
+${i18n.__('email.questionsContact')}
 
 ---
-Brandmeister Lastheard Next Generation API
-This is an automated email. Please do not reply.
+${i18n.__('email.brandmeisterApi')}
+${i18n.__('email.automatedEmail')}
     `,
   };
 
@@ -445,13 +455,18 @@ async function testEmailConfig() {
   }
 }
 
-async function sendExpiryReminderEmail(email, name, apiKey, daysUntilExpiry, expiresAt) {
+async function sendExpiryReminderEmail(email, name, apiKey, daysUntilExpiry, expiresAt, locale = 'en') {
   if (!transporter) {
     console.error('Email transporter not available. Please check email configuration.');
     return false;
   }
 
-  const expiryDate = new Date(expiresAt * 1000).toLocaleDateString('en-US', { 
+  // Set locale for translations
+  i18n.setLocale(locale);
+
+  // Use locale-specific date formatting
+  const localeMap = { 'en': 'en-US', 'es': 'es-ES', 'de': 'de-DE', 'fr': 'fr-FR' };
+  const expiryDate = new Date(expiresAt * 1000).toLocaleDateString(localeMap[locale] || 'en-US', { 
     year: 'numeric', 
     month: 'long', 
     day: 'numeric' 
@@ -460,7 +475,7 @@ async function sendExpiryReminderEmail(email, name, apiKey, daysUntilExpiry, exp
   const mailOptions = {
     from: EMAIL_FROM,
     to: email,
-    subject: `Your Brandmeister API Key Expires in ${daysUntilExpiry} Days`,
+    subject: i18n.__('email.expiryReminderSubject', { days: daysUntilExpiry }),
     html: `
 <!DOCTYPE html>
 <html lang="en">

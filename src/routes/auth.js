@@ -80,7 +80,8 @@ router.post('/request-key', async (req, res) => {
 
     if (existingVerification) {
       // Resend verification email with existing token
-      const emailSent = await sendVerificationEmail(email, name, existingVerification.verification_token);
+      const locale = res.locals.locale || 'en';
+      const emailSent = await sendVerificationEmail(email, name, existingVerification.verification_token, locale);
       if (!emailSent) {
         return res.status(500).json({ error: 'Failed to send verification email. Please try again later.' });
       }
@@ -90,15 +91,17 @@ router.post('/request-key', async (req, res) => {
       });
     }
 
-    // Insert verification record
+    // Insert verification record with user's locale
+    const locale = res.locals.locale || 'en';
     const stmt = db.prepare(`
-      INSERT INTO email_verifications (email, name, verification_token, expires_at)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO email_verifications (email, name, verification_token, expires_at, locale)
+      VALUES (?, ?, ?, ?, ?)
     `);
-    stmt.run(email, name, verificationToken, expiresAt);
+    stmt.run(email, name, verificationToken, expiresAt, locale);
 
-    // Send verification email
-    const emailSent = await sendVerificationEmail(email, name, verificationToken);
+    // Send verification email with user's locale
+    const locale = res.locals.locale || 'en';
+    const emailSent = await sendVerificationEmail(email, name, verificationToken, locale);
     
     if (!emailSent) {
       return res.status(500).json({ error: 'Failed to send verification email. Please try again later.' });
@@ -462,12 +465,15 @@ router.get('/verify-email', async (req, res) => {
     const apiKey = uuidv4();
     const expiresAt = Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60); // 365 days from now
 
-    // Insert API key
+    // Get locale from verification record
+    const locale = verification.locale || 'en';
+
+    // Insert API key with locale
     const insertStmt = db.prepare(`
-      INSERT INTO api_keys (api_key, name, email, expires_at)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO api_keys (api_key, name, email, expires_at, locale)
+      VALUES (?, ?, ?, ?, ?)
     `);
-    insertStmt.run(apiKey, verification.name, verification.email, expiresAt);
+    insertStmt.run(apiKey, verification.name, verification.email, expiresAt, locale);
 
     // Mark verification as complete
     const updateStmt = db.prepare(
@@ -475,8 +481,8 @@ router.get('/verify-email', async (req, res) => {
     );
     updateStmt.run(verification.id);
 
-    // Send API key via email
-    const emailSent = await sendApiKeyEmail(verification.email, verification.name, apiKey);
+    // Send API key via email in user's language
+    const emailSent = await sendApiKeyEmail(verification.email, verification.name, apiKey, locale);
     
     if (!emailSent) {
       console.error('Failed to send API key email, but key was created');

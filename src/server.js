@@ -2,11 +2,14 @@
 require('dotenv').config();
 
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 const { initDatabase } = require('./db/database');
 const { startScheduler } = require('./services/schedulerService');
 const { startBrandmeisterService } = require('./services/brandmeisterService');
+const i18n = require('./config/i18n');
+const { languageMiddleware } = require('./middleware/language');
 const lastheardRoutes = require('./routes/lastheard');
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
@@ -20,6 +23,9 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(i18n.init);
+app.use(languageMiddleware);
 
 // Initialize database
 initDatabase();

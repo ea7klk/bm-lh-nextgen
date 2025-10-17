@@ -181,6 +181,34 @@ function initDatabase() {
     console.error('Error during migration:', error);
   }
 
+  // Migrate existing api_keys table to add locale column if it doesn't exist
+  try {
+    const columns = db.pragma('table_info(api_keys)');
+    const hasLocale = columns.some(col => col.name === 'locale');
+    
+    if (!hasLocale) {
+      console.log('Migrating api_keys table to add locale column...');
+      db.exec(`ALTER TABLE api_keys ADD COLUMN locale TEXT DEFAULT 'en'`);
+      console.log('Migration completed successfully');
+    }
+  } catch (error) {
+    console.error('Error during migration:', error);
+  }
+
+  // Migrate existing email_verifications table to add locale column if it doesn't exist
+  try {
+    const columns = db.pragma('table_info(email_verifications)');
+    const hasLocale = columns.some(col => col.name === 'locale');
+    
+    if (!hasLocale) {
+      console.log('Migrating email_verifications table to add locale column...');
+      db.exec(`ALTER TABLE email_verifications ADD COLUMN locale TEXT DEFAULT 'en'`);
+      console.log('Migration completed successfully');
+    }
+  } catch (error) {
+    console.error('Error during migration:', error);
+  }
+
   console.log('Database initialized successfully');
 }
 
