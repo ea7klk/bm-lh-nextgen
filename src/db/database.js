@@ -209,6 +209,57 @@ function initDatabase() {
     console.error('Error during migration:', error);
   }
 
+  // Create users table for user registration
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      callsign TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      is_active INTEGER DEFAULT 0,
+      created_at INTEGER DEFAULT (strftime('%s', 'now')),
+      last_login_at INTEGER,
+      locale TEXT DEFAULT 'en'
+    )
+  `);
+
+  // Create user_verifications table for email verification during registration
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_verifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      callsign TEXT NOT NULL,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      verification_token TEXT UNIQUE NOT NULL,
+      is_verified INTEGER DEFAULT 0,
+      created_at INTEGER DEFAULT (strftime('%s', 'now')),
+      expires_at INTEGER NOT NULL,
+      locale TEXT DEFAULT 'en'
+    )
+  `);
+
+  // Create sessions table for user sessions
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_sessions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_token TEXT UNIQUE NOT NULL,
+      user_id INTEGER NOT NULL,
+      created_at INTEGER DEFAULT (strftime('%s', 'now')),
+      expires_at INTEGER NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Create indexes for users and sessions
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_user_email ON users(email);
+    CREATE INDEX IF NOT EXISTS idx_user_callsign ON users(callsign);
+    CREATE INDEX IF NOT EXISTS idx_user_verification_token ON user_verifications(verification_token);
+    CREATE INDEX IF NOT EXISTS idx_session_token ON user_sessions(session_token);
+  `);
+
   console.log('Database initialized successfully');
 }
 

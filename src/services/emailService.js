@@ -64,7 +64,7 @@ function createTransporter() {
 
 const transporter = createTransporter();
 
-async function sendVerificationEmail(email, name, verificationToken, locale = 'en') {
+async function sendVerificationEmail(email, name, verificationToken, locale = 'en', type = 'apikey') {
   if (!transporter) {
     console.error('Email transporter not available. Please check email configuration.');
     return false;
@@ -73,7 +73,10 @@ async function sendVerificationEmail(email, name, verificationToken, locale = 'e
   // Set locale for translations
   i18n.setLocale(locale);
 
-  const verificationLink = `${BASE_URL}/api/auth/verify-email?token=${verificationToken}`;
+  // Choose verification link based on type
+  const verificationLink = type === 'user' 
+    ? `${BASE_URL}/user/verify?token=${verificationToken}`
+    : `${BASE_URL}/api/auth/verify-email?token=${verificationToken}`;
   
   const mailOptions = {
     from: EMAIL_FROM,

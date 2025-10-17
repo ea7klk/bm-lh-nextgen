@@ -22,6 +22,7 @@
   "author": "EA7KLK",
   "license": "MIT",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.4.1",
     "cookie-parser": "^1.4.7",
     "csv-parse": "^6.1.0",

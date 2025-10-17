@@ -16,6 +16,7 @@ const adminRoutes = require('./routes/admin');
 const talkgroupsRoutes = require('./routes/talkgroups');
 const publicRoutes = require('./routes/public');
 const frontendRoutes = require('./routes/frontend');
+const userRoutes = require('./routes/user');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -47,6 +48,9 @@ app.use('/public', publicRoutes);
 
 // Auth routes (public, no authentication required)
 app.use('/api/auth', authRoutes);
+
+// User routes (public registration/login, some protected)
+app.use('/user', userRoutes);
 
 // Admin routes (protected with admin password)
 app.use('/admin', adminRoutes);
