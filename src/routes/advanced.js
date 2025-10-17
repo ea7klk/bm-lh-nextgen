@@ -758,7 +758,7 @@ router.get('/', authenticateUser, (req, res) => {
                 let url = '/public/lastheard/callsigns?timeRange=' + timeRange + '&limit=' + maxEntries;
                 if (callsignSearch) {
                     // Convert wildcard pattern to SQL LIKE pattern
-                    const likePattern = callsignSearch.replace(/\*/g, '%');
+                    const likePattern = callsignSearch.replace(/\\*/g, '%');
                     url += '&callsign=' + encodeURIComponent(likePattern);
                 }
                 if (continent && continent !== 'All') {
