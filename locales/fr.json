@@ -166,7 +166,7 @@
     "noAccount": "Vous n'avez pas de compte?",
     "registerHere": "Inscrivez-vous ici",
     "logoutButton": "Se Déconnecter",
-    "greeting": "Bienvenue, {{callsign}}!",
+    "greeting": "Bienvenue %s",
     "advancedFunctions": "Fonctions Avancées",
     "advancedFunctionsPromo": "La recherche avancée et les statistiques sont disponibles pour les utilisateurs inscrits.",
     "registerToAccess": "Inscrivez-vous pour accéder à ces fonctionnalités",
