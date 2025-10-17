@@ -306,7 +306,7 @@ router.get('/verify-email', async (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Already Verified - Brandmeister Lastheard Next Generation</title>
+    <title>${__('apiKey.alreadyVerified')} - Brandmeister Lastheard Next Generation</title>
     <style>
         * {
             margin: 0;
@@ -375,12 +375,12 @@ router.get('/verify-email', async (req, res) => {
 <body>
     <div class="container">
         <div class="icon warning-icon">ℹ️</div>
-        <h1>Already Verified</h1>
-        <p>This email has already been verified.</p>
+        <h1>${__('apiKey.alreadyVerified')}</h1>
+        <p>${__('apiKey.alreadyVerifiedMessage')}</p>
         <div class="info-box">
-            <p><strong>Check your email for your API key</strong></p>
+            <p><strong>${__('apiKey.checkEmail')}</strong></p>
         </div>
-        <a href="/" class="back-link">Go to Home</a>
+        <a href="/" class="back-link">${__('apiKey.goToHome')}</a>
     </div>
 </body>
 </html>
@@ -391,11 +391,11 @@ router.get('/verify-email', async (req, res) => {
     if (verification.expires_at < currentTime) {
       return res.status(400).send(`
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${locale}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Token Expired - Brandmeister Lastheard Next Generation</title>
+    <title>${__('apiKey.tokenExpired')} - Brandmeister Lastheard Next Generation</title>
     <style>
         * {
             margin: 0;
@@ -454,9 +454,9 @@ router.get('/verify-email', async (req, res) => {
 <body>
     <div class="container">
         <div class="icon warning-icon">⏱️</div>
-        <h1>Verification Token Expired</h1>
-        <p>This verification token has expired. Please request a new API key.</p>
-        <a href="/api/auth/request-key" class="back-link">Request New API Key</a>
+        <h1>${__('apiKey.tokenExpired')}</h1>
+        <p>${__('apiKey.tokenExpiredMessage')}</p>
+        <a href="/api/auth/request-key" class="back-link">${__('apiKey.requestNewKey')}</a>
     </div>
 </body>
 </html>
@@ -499,11 +499,11 @@ router.get('/verify-email', async (req, res) => {
 
     res.send(`
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${locale}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Verified - Brandmeister Lastheard Next Generation</title>
+    <title>${__('apiKey.emailVerified')} - Brandmeister Lastheard Next Generation</title>
     <style>
         * {
             margin: 0;
@@ -659,26 +659,26 @@ router.get('/verify-email', async (req, res) => {
 <body>
     <div class="container">
         <div class="icon success-icon">✅</div>
-        <h1>Email Verified Successfully!</h1>
-        <p class="subtitle">Your API key has been generated and sent to your email</p>
+        <h1>${__('apiKey.emailVerified')}</h1>
+        <p class="subtitle">${__('apiKey.apiKeySent')}</p>
         
         <div class="api-key-box">
-            <div class="api-key-label">YOUR API KEY</div>
+            <div class="api-key-label">${__('apiKey.yourApiKey')}</div>
             <div class="api-key" id="apiKey">${apiKey}</div>
-            <button class="copy-btn" id="copyBtn" onclick="copyApiKey()">Copy to Clipboard</button>
+            <button class="copy-btn" id="copyBtn" onclick="copyApiKey()">${__('apiKey.copyToClipboard')}</button>
         </div>
 
         <div class="expiry-info">
-            <p><strong>Valid until:</strong> ${expiryDate}</p>
+            <p><strong>${__('apiKey.validUntil')}</strong> ${expiryDate}</p>
         </div>
         
         <div class="warning">
-            <p><strong>⚠️ Important:</strong> Please save this API key securely. You will need it to access the API. We've also sent it to your email for safekeeping.</p>
+            <p><strong>⚠️ ${__('apiKey.important')}</strong> ${__('apiKey.saveApiKey')}</p>
         </div>
         
         <div class="info">
-            <p><strong>How to use your API key:</strong></p>
-            <p>Include your API key in the <code>X-API-Key</code> header with all API requests.</p>
+            <p><strong>${__('apiKey.howToUse')}</strong></p>
+            <p>${__('apiKey.includeHeader')} <code>X-API-Key</code> ${__('apiKey.headerWithRequests')}</p>
         </div>
         
         <div class="example">
@@ -686,7 +686,7 @@ router.get('/verify-email', async (req, res) => {
      ${process.env.BASE_URL || 'http://localhost:3000'}/api/lastheard</code>
         </div>
         
-        <a href="/" class="back-link">← Go to Home</a>
+        <a href="/" class="back-link">${__('apiKey.goToHome')}</a>
     </div>
 
     <script>
@@ -695,11 +695,11 @@ router.get('/verify-email', async (req, res) => {
             const btn = document.getElementById('copyBtn');
             
             navigator.clipboard.writeText(apiKey).then(() => {
-                btn.textContent = '✓ Copied!';
+                btn.textContent = '${__('apiKey.copied')}';
                 btn.classList.add('copied');
                 
                 setTimeout(() => {
-                    btn.textContent = 'Copy to Clipboard';
+                    btn.textContent = '${__('apiKey.copyToClipboard')}';
                     btn.classList.remove('copied');
                 }, 2000);
             }).catch(err => {
@@ -714,11 +714,11 @@ router.get('/verify-email', async (req, res) => {
     console.error('Error in verify-email:', error);
     res.status(500).send(`
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${locale}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Server Error - Brandmeister Lastheard Next Generation</title>
+    <title>${__('apiKey.serverError')} - Brandmeister Lastheard Next Generation</title>
     <style>
         * {
             margin: 0;
@@ -777,9 +777,9 @@ router.get('/verify-email', async (req, res) => {
 <body>
     <div class="container">
         <div class="icon error-icon">💥</div>
-        <h1>Internal Server Error</h1>
-        <p>We're sorry, something went wrong. Please try again later.</p>
-        <a href="/api/auth/request-key" class="back-link">Request New API Key</a>
+        <h1>${__('apiKey.serverError')}</h1>
+        <p>${__('apiKey.serverErrorMessage')}</p>
+        <a href="/api/auth/request-key" class="back-link">${__('apiKey.requestNewKey')}</a>
     </div>
 </body>
 </html>
