@@ -385,12 +385,12 @@ router.get('/lastheard/callsigns', (req, res) => {
     const query = `
       SELECT 
         SourceCall as callsign,
-        SourceName as name,
+        MAX(SourceName) as name,
         COUNT(*) as count,
         SUM(duration) as totalDuration
       FROM lastheard
       ${whereClause}
-      GROUP BY SourceCall, SourceName
+      GROUP BY SourceCall
       ORDER BY count DESC
       LIMIT ?
     `;
