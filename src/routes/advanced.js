@@ -141,6 +141,12 @@ router.get('/', authenticateUser, (req, res) => {
         .controls input[type="text"] {
             min-width: 200px;
         }
+        .control-group .tooltip {
+            width: 100%;
+        }
+        .control-group .tooltip input[type="text"] {
+            width: 100%;
+        }
         .chart-container {
             background: white;
             border-radius: 12px;
@@ -395,7 +401,6 @@ router.get('/', authenticateUser, (req, res) => {
                 <label for="continent">${__('home.continent')}</label>
                 <select id="continent">
                     <option value="All">${__('home.all')}</option>
-                    <option value="Global">${__('home.global')}</option>
                 </select>
             </div>
             <div class="control-group" id="countryGroup" style="display: none;">
@@ -404,17 +409,19 @@ router.get('/', authenticateUser, (req, res) => {
                     <option value="">${__('home.all')}</option>
                 </select>
             </div>
-            <div class="control-group" id="talkgroupGroup" style="display: none;">
+            <div class="control-group" id="talkgroupGroup">
                 <label for="talkgroup">Talkgroup (ID or Name)</label>
                 <div class="search-container">
                     <input type="text" id="talkgroup" placeholder="Search talkgroup...">
                     <div id="talkgroupSuggestions" class="autocomplete-suggestions" style="display: none;"></div>
                 </div>
             </div>
-            <div class="control-group tooltip">
+            <div class="control-group">
                 <label for="callsignSearch">Callsign Search</label>
-                <input type="text" id="callsignSearch" placeholder="e.g., EA* or EA7KLK">
-                <span class="tooltiptext">Use wildcards: EA* for all EA callsigns, *KLK for ending with KLK</span>
+                <div class="tooltip">
+                    <input type="text" id="callsignSearch" placeholder="e.g., EA* or EA7KLK">
+                    <span class="tooltiptext">Use wildcards: EA* for all EA callsigns, *KLK for ending with KLK</span>
+                </div>
             </div>
             <div class="control-group">
                 <label for="maxEntries">${__('home.maxEntries')}</label>
@@ -637,7 +644,7 @@ router.get('/', authenticateUser, (req, res) => {
 
             if (matches.length > 0) {
                 suggestions.innerHTML = matches.map(tg => 
-                    '<div class="autocomplete-suggestion" onclick="selectTalkgroup(' + tg.talkgroup_id + ', \\'' + tg.name.replace(/'/g, "\\'") + '\\')">' +
+                    '<div class="autocomplete-suggestion" onclick="selectTalkgroup(' + tg.talkgroup_id + ', &quot;' + tg.name.replace(/"/g, "&quot;") + '&quot;)">' +
                     tg.talkgroup_id + ' - ' + tg.name +
                     '</div>'
                 ).join('');
@@ -733,7 +740,7 @@ router.get('/', authenticateUser, (req, res) => {
                 let url = '/public/lastheard/callsigns?timeRange=' + timeRange + '&limit=' + maxEntries;
                 if (callsignSearch) {
                     // Convert wildcard pattern to SQL LIKE pattern
-                    const likePattern = callsignSearch.replace(/\*/g, '%');
+                    const likePattern = callsignSearch.replace(/\\*/g, '%');
                     url += '&callsign=' + encodeURIComponent(likePattern);
                 }
                 
