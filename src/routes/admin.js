@@ -7,6 +7,16 @@ const { authenticateAdmin } = require('../middleware/adminAuth');
 router.use(authenticateAdmin);
 
 /**
+ * @swagger
+ * components:
+ *   securitySchemes:
+ *     basicAuth:
+ *       type: http
+ *       scheme: basic
+ *       description: Admin authentication using Basic Auth (username is ignored, only password is checked)
+ */
+
+/**
  * Admin home page - HTML interface
  */
 router.get('/', (req, res) => {
@@ -625,7 +635,28 @@ router.delete('/verifications/:id', (req, res) => {
 });
 
 /**
- * Get all users
+ * @swagger
+ * /admin/users:
+ *   get:
+ *     summary: Get all users (Admin only)
+ *     description: Retrieve a list of all registered users with their details
+ *     tags:
+ *       - Admin - User Management
+ *     security:
+ *       - basicAuth: []
+ *     responses:
+ *       200:
+ *         description: List of users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Authentication required
+ *       500:
+ *         description: Server error
  */
 router.get('/users', (req, res) => {
   try {
@@ -639,7 +670,55 @@ router.get('/users', (req, res) => {
 });
 
 /**
- * Update user status (activate/deactivate)
+ * @swagger
+ * /admin/users/{id}/status:
+ *   put:
+ *     summary: Update user status (Admin only)
+ *     description: Activate or deactivate a user account
+ *     tags:
+ *       - Admin - User Management
+ *     security:
+ *       - basicAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User ID
+ *         example: 1
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - is_active
+ *             properties:
+ *               is_active:
+ *                 type: integer
+ *                 description: User active status (0 for inactive, 1 for active)
+ *                 example: 1
+ *     responses:
+ *       200:
+ *         description: User status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: User status updated successfully
+ *       400:
+ *         description: Invalid request
+ *       404:
+ *         description: User not found
+ *       401:
+ *         description: Authentication required
+ *       500:
+ *         description: Server error
  */
 router.put('/users/:id/status', (req, res) => {
   try {
@@ -665,7 +744,40 @@ router.put('/users/:id/status', (req, res) => {
 });
 
 /**
- * Delete a user
+ * @swagger
+ * /admin/users/{id}:
+ *   delete:
+ *     summary: Delete a user (Admin only)
+ *     description: Permanently delete a user account and all associated sessions
+ *     tags:
+ *       - Admin - User Management
+ *     security:
+ *       - basicAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User ID
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: User deleted successfully
+ *       404:
+ *         description: User not found
+ *       401:
+ *         description: Authentication required
+ *       500:
+ *         description: Server error
  */
 router.delete('/users/:id', (req, res) => {
   try {

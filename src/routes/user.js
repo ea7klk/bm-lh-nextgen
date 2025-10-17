@@ -6,6 +6,87 @@ const { db } = require('../db/database');
 const { sendVerificationEmail } = require('../services/emailService');
 
 /**
+ * @swagger
+ * components:
+ *   schemas:
+ *     UserRegistration:
+ *       type: object
+ *       required:
+ *         - callsign
+ *         - name
+ *         - email
+ *         - password
+ *       properties:
+ *         callsign:
+ *           type: string
+ *           description: User's callsign (will be converted to uppercase)
+ *           example: EA7KLK
+ *         name:
+ *           type: string
+ *           description: User's full name
+ *           example: John Doe
+ *         email:
+ *           type: string
+ *           format: email
+ *           description: User's email address
+ *           example: user@example.com
+ *         password:
+ *           type: string
+ *           format: password
+ *           description: User's password (minimum 8 characters)
+ *           example: securepassword123
+ *     UserLogin:
+ *       type: object
+ *       required:
+ *         - callsign
+ *         - password
+ *       properties:
+ *         callsign:
+ *           type: string
+ *           description: User's callsign
+ *           example: EA7KLK
+ *         password:
+ *           type: string
+ *           format: password
+ *           description: User's password
+ *           example: securepassword123
+ *     User:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: User's unique identifier
+ *         callsign:
+ *           type: string
+ *           description: User's callsign
+ *         name:
+ *           type: string
+ *           description: User's full name
+ *         email:
+ *           type: string
+ *           description: User's email address
+ *         is_active:
+ *           type: integer
+ *           description: Whether the user account is active (0 or 1)
+ *         created_at:
+ *           type: integer
+ *           description: Unix timestamp of account creation
+ *         last_login_at:
+ *           type: integer
+ *           description: Unix timestamp of last login
+ *         locale:
+ *           type: string
+ *           description: User's preferred language
+ *           example: en
+ *   securitySchemes:
+ *     cookieAuth:
+ *       type: apiKey
+ *       in: cookie
+ *       name: session_token
+ *       description: Session token stored in HTTP-only cookie
+ */
+
+/**
  * User registration form
  */
 router.get('/register', (req, res) => {
@@ -267,7 +348,45 @@ router.get('/register', (req, res) => {
 });
 
 /**
- * User registration endpoint
+ * @swagger
+ * /user/register:
+ *   post:
+ *     summary: Register a new user
+ *     description: Submit user registration. A verification email will be sent to activate the account.
+ *     tags:
+ *       - User Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserRegistration'
+ *     responses:
+ *       200:
+ *         description: Registration successful, verification email sent
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Registration successful! Please check your email to verify your account.
+ *                 email:
+ *                   type: string
+ *                   example: user@example.com
+ *       400:
+ *         description: Invalid request or user already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Callsign or email already registered
+ *       500:
+ *         description: Server error
  */
 router.post('/register', async (req, res) => {
   try {
@@ -350,7 +469,36 @@ router.post('/register', async (req, res) => {
 });
 
 /**
- * Verify user email
+ * @swagger
+ * /user/verify:
+ *   get:
+ *     summary: Verify user email address
+ *     description: Verify user's email address using the token sent via email. Creates the user account upon successful verification.
+ *     tags:
+ *       - User Authentication
+ *     parameters:
+ *       - in: query
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Verification token from email
+ *         example: 550e8400-e29b-41d4-a716-446655440000
+ *     responses:
+ *       200:
+ *         description: Email verified successfully, user account created
+ *         content:
+ *           text/html:
+ *             schema:
+ *               type: string
+ *       400:
+ *         description: Invalid, expired, or already used token
+ *         content:
+ *           text/html:
+ *             schema:
+ *               type: string
+ *       500:
+ *         description: Server error
  */
 router.get('/verify', async (req, res) => {
   try {
@@ -881,7 +1029,67 @@ router.get('/login', (req, res) => {
 });
 
 /**
- * User login endpoint
+ * @swagger
+ * /user/login:
+ *   post:
+ *     summary: User login
+ *     description: Authenticate user with callsign and password. Creates a session and updates last_login_at timestamp.
+ *     tags:
+ *       - User Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserLogin'
+ *     responses:
+ *       200:
+ *         description: Login successful, session cookie set
+ *         headers:
+ *           Set-Cookie:
+ *             description: Session token cookie (HTTP-only)
+ *             schema:
+ *               type: string
+ *               example: session_token=550e8400-e29b-41d4-a716-446655440000; Path=/; HttpOnly; Max-Age=2592000
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Login successful
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     callsign:
+ *                       type: string
+ *                       example: EA7KLK
+ *                     name:
+ *                       type: string
+ *                       example: John Doe
+ *       401:
+ *         description: Invalid credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Invalid callsign or password
+ *       403:
+ *         description: Account not active
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Account is not active. Please verify your email or contact support.
+ *       500:
+ *         description: Server error
  */
 router.post('/login', async (req, res) => {
   try {
@@ -948,7 +1156,28 @@ router.post('/login', async (req, res) => {
 });
 
 /**
- * User logout endpoint
+ * @swagger
+ * /user/logout:
+ *   post:
+ *     summary: User logout
+ *     description: Logout user by deleting the session and clearing the session cookie
+ *     tags:
+ *       - User Authentication
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Logout successful
+ *       500:
+ *         description: Server error
  */
 router.post('/logout', (req, res) => {
   try {
