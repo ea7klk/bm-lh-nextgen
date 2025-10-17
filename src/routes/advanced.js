@@ -386,7 +386,7 @@ router.get('/', authenticateUser, (req, res) => {
             <h1>🔊 ${__('home.title')} - Advanced Functions</h1>
             <p>${__('home.subtitle')}</p>
             <div class="user-section">
-                <span class="user-greeting">${__('user.greeting').replace('{{callsign}}', '<span class="user-callsign">' + user.callsign + '</span>')}</span>
+                <span class="user-greeting">${__('user.greeting').replace('{{callsign}}', '<a href="/user/profile" class="user-callsign" style="text-decoration: none;">' + user.callsign + '</a>')}</span>
                 <a href="/" class="auth-link secondary">← Standard Dashboard</a>
                 <button onclick="logout()" class="auth-link logout">${__('user.logoutButton')}</button>
             </div>

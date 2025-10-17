@@ -593,9 +593,199 @@ This is an automated email. Please do not reply.
   }
 }
 
+async function sendPasswordResetEmail(email, name, resetToken, locale = 'en') {
+  if (!transporter) {
+    console.error('Email transporter not available. Please check email configuration.');
+    return false;
+  }
+
+  // Set locale for translations
+  i18n.setLocale(locale);
+
+  const resetLink = `${BASE_URL}/user/reset-password?token=${resetToken}`;
+  
+  const mailOptions = {
+    from: EMAIL_FROM,
+    to: email,
+    subject: i18n.__('email.passwordResetSubject'),
+    html: `
+<!DOCTYPE html>
+<html lang="${locale}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${i18n.__('email.passwordResetTitle')}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background-color: #f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden;">
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 40px 30px; text-align: center;">
+                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">🔐 ${i18n.__('email.passwordResetTitle')}</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 40px;">
+                            <p style="color: #666666; line-height: 1.6; margin: 0 0 20px; font-size: 16px;">${i18n.__('email.hello')} ${name},</p>
+                            <p style="color: #666666; line-height: 1.6; margin: 0 0 30px; font-size: 16px;">${i18n.__('email.passwordResetBody')}</p>
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td align="center" style="padding: 0 0 30px;">
+                                        <a href="${resetLink}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">${i18n.__('email.resetPasswordButton')}</a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="color: #999999; line-height: 1.6; margin: 0 0 20px; font-size: 14px;">${i18n.__('email.buttonNotWork')}</p>
+                            <p style="color: #667eea; line-height: 1.6; margin: 0 0 30px; font-size: 14px; word-break: break-all;">${resetLink}</p>
+                            <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 16px; border-radius: 6px; margin: 0 0 30px;">
+                                <p style="color: #856404; margin: 0; font-size: 14px; line-height: 1.6;"><strong>⏱️ ${i18n.__('email.resetLinkExpires')}</strong></p>
+                            </div>
+                            <p style="color: #999999; line-height: 1.6; margin: 0; font-size: 14px;">${i18n.__('email.didNotRequestReset')}</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background-color: #f8f9fa; padding: 30px 40px; text-align: center; border-top: 1px solid #e0e0e0;">
+                            <p style="color: #999999; margin: 0; font-size: 14px; line-height: 1.6;">${i18n.__('email.brandmeisterApi')}</p>
+                            <p style="color: #999999; margin: 10px 0 0; font-size: 12px;">${i18n.__('email.automatedEmail')}</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `,
+    text: `
+${i18n.__('email.passwordResetTitle')}
+
+${i18n.__('email.hello')} ${name},
+
+${i18n.__('email.passwordResetBody')}
+
+${resetLink}
+
+⏱️ ${i18n.__('email.resetLinkExpires')}
+
+${i18n.__('email.didNotRequestReset')}
+
+---
+${i18n.__('email.brandmeisterApi')}
+${i18n.__('email.automatedEmail')}
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Password reset email sent to ${email}`);
+    return true;
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    return false;
+  }
+}
+
+async function sendEmailChangeVerificationEmail(email, name, token, isOldEmail, locale = 'en') {
+  if (!transporter) {
+    console.error('Email transporter not available. Please check email configuration.');
+    return false;
+  }
+
+  // Set locale for translations
+  i18n.setLocale(locale);
+
+  const verificationLink = `${BASE_URL}/user/verify-email-change?token=${token}`;
+  
+  const mailOptions = {
+    from: EMAIL_FROM,
+    to: email,
+    subject: i18n.__('email.emailChangeSubject'),
+    html: `
+<!DOCTYPE html>
+<html lang="${locale}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${i18n.__('email.emailChangeTitle')}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background-color: #f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden;">
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 40px 30px; text-align: center;">
+                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">📧 ${i18n.__('email.emailChangeTitle')}</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 40px;">
+                            <p style="color: #666666; line-height: 1.6; margin: 0 0 20px; font-size: 16px;">${i18n.__('email.hello')} ${name},</p>
+                            <p style="color: #666666; line-height: 1.6; margin: 0 0 30px; font-size: 16px;">${isOldEmail ? i18n.__('email.emailChangeBodyOld') : i18n.__('email.emailChangeBodyNew')}</p>
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td align="center" style="padding: 0 0 30px;">
+                                        <a href="${verificationLink}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">${i18n.__('email.verifyEmailButton')}</a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="color: #999999; line-height: 1.6; margin: 0 0 20px; font-size: 14px;">${i18n.__('email.buttonNotWork')}</p>
+                            <p style="color: #667eea; line-height: 1.6; margin: 0 0 30px; font-size: 14px; word-break: break-all;">${verificationLink}</p>
+                            <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 16px; border-radius: 6px; margin: 0 0 30px;">
+                                <p style="color: #856404; margin: 0; font-size: 14px; line-height: 1.6;"><strong>⏱️ ${i18n.__('email.linkExpires')}</strong></p>
+                            </div>
+                            <p style="color: #999999; line-height: 1.6; margin: 0; font-size: 14px;">${i18n.__('email.didNotRequestChange')}</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background-color: #f8f9fa; padding: 30px 40px; text-align: center; border-top: 1px solid #e0e0e0;">
+                            <p style="color: #999999; margin: 0; font-size: 14px; line-height: 1.6;">${i18n.__('email.brandmeisterApi')}</p>
+                            <p style="color: #999999; margin: 10px 0 0; font-size: 12px;">${i18n.__('email.automatedEmail')}</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `,
+    text: `
+${i18n.__('email.emailChangeTitle')}
+
+${i18n.__('email.hello')} ${name},
+
+${isOldEmail ? i18n.__('email.emailChangeBodyOld') : i18n.__('email.emailChangeBodyNew')}
+
+${verificationLink}
+
+⏱️ ${i18n.__('email.linkExpires')}
+
+${i18n.__('email.didNotRequestChange')}
+
+---
+${i18n.__('email.brandmeisterApi')}
+${i18n.__('email.automatedEmail')}
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Email change verification sent to ${email}`);
+    return true;
+  } catch (error) {
+    console.error('Error sending email change verification:', error);
+    return false;
+  }
+}
+
 module.exports = {
   sendVerificationEmail,
   sendApiKeyEmail,
   sendExpiryReminderEmail,
+  sendPasswordResetEmail,
+  sendEmailChangeVerificationEmail,
   testEmailConfig,
 };

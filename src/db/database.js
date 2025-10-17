@@ -260,6 +260,43 @@ function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_session_token ON user_sessions(session_token);
   `);
 
+  // Create password_reset_tokens table for password recovery
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      reset_token TEXT UNIQUE NOT NULL,
+      is_used INTEGER DEFAULT 0,
+      created_at INTEGER DEFAULT (strftime('%s', 'now')),
+      expires_at INTEGER NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Create email_change_tokens table for email change verification
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS email_change_tokens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      old_email TEXT NOT NULL,
+      new_email TEXT NOT NULL,
+      old_email_token TEXT UNIQUE NOT NULL,
+      new_email_token TEXT UNIQUE,
+      old_email_verified INTEGER DEFAULT 0,
+      new_email_verified INTEGER DEFAULT 0,
+      created_at INTEGER DEFAULT (strftime('%s', 'now')),
+      expires_at INTEGER NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Create indexes for password reset and email change tokens
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_reset_token ON password_reset_tokens(reset_token);
+    CREATE INDEX IF NOT EXISTS idx_old_email_token ON email_change_tokens(old_email_token);
+    CREATE INDEX IF NOT EXISTS idx_new_email_token ON email_change_tokens(new_email_token);
+  `);
+
   console.log('Database initialized successfully');
 }
 

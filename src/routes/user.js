@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const { db } = require('../db/database');
 const { sendVerificationEmail } = require('../services/emailService');
+const { authenticateUser } = require('../middleware/userAuth');
 
 /**
  * @swagger
@@ -972,6 +973,10 @@ router.get('/login', (req, res) => {
             ${__('user.noAccount')} <a href="/user/register">${__('user.registerHere')}</a>
         </div>
         
+        <div class="register-link">
+            <a href="/user/forgot-password">${__('user.forgotPassword')}</a>
+        </div>
+        
         <a href="/" class="back-link">${__('user.backToHome')}</a>
     </div>
 
@@ -1198,5 +1203,1108 @@ router.post('/logout', (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+/**
+ * Forgot password form
+ */
+router.get('/forgot-password', (req, res) => {
+  const locale = res.locals.locale || 'en';
+  const __ = req.__;
+  
+  res.send(`
+<!DOCTYPE html>
+<html lang="${locale}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${__('user.forgotPasswordTitle')} - Brandmeister Lastheard Next Generation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 { color: #333; margin-bottom: 10px; font-size: 28px; }
+        .subtitle { color: #666; margin-bottom: 30px; font-size: 14px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; color: #333; margin-bottom: 8px; font-weight: 500; }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input:focus { outline: none; border-color: #667eea; }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); }
+        button:active { transform: translateY(0); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .message {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 6px;
+            display: none;
+        }
+        .message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .message.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>${__('user.forgotPasswordTitle')}</h1>
+        <p class="subtitle">${__('user.forgotPasswordSubtitle')}</p>
+        
+        <form id="forgotPasswordForm">
+            <div class="form-group">
+                <label for="callsign">${__('user.callsign')} *</label>
+                <input type="text" id="callsign" name="callsign" required placeholder="${__('user.callsignPlaceholder')}">
+            </div>
+            
+            <div class="form-group">
+                <label for="email">${__('user.email')} *</label>
+                <input type="email" id="email" name="email" required placeholder="${__('user.emailPlaceholder')}">
+            </div>
+            
+            <button type="submit" id="submitBtn">${__('user.sendResetLink')}</button>
+        </form>
+        
+        <div id="message" class="message"></div>
+        
+        <a href="/user/login" class="back-link">← ${__('user.backToLogin')}</a>
+    </div>
+
+    <script>
+        document.getElementById('forgotPasswordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const messageDiv = document.getElementById('message');
+            const callsign = document.getElementById('callsign').value.trim().toUpperCase();
+            const email = document.getElementById('email').value.trim();
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = '${__('user.sending')}';
+            messageDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch('/user/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ callsign, email }),
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    messageDiv.className = 'message success';
+                    messageDiv.textContent = data.message;
+                    messageDiv.style.display = 'block';
+                    document.getElementById('forgotPasswordForm').reset();
+                } else {
+                    messageDiv.className = 'message error';
+                    messageDiv.textContent = data.error || '${__('user.requestFailed')}';
+                    messageDiv.style.display = 'block';
+                }
+            } catch (error) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = '${__('user.requestFailed')}';
+                messageDiv.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '${__('user.sendResetLink')}';
+            }
+        });
+    </script>
+</body>
+</html>
+  `);
+});
+
+/**
+ * Forgot password - send reset link
+ */
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { callsign, email } = req.body;
+    const locale = res.locals.locale || 'en';
+    const { sendPasswordResetEmail } = require('../services/emailService');
+
+    if (!callsign || !email) {
+      return res.status(400).json({ error: 'Callsign and email are required' });
+    }
+
+    const normalizedCallsign = callsign.trim().toUpperCase();
+
+    // Find user with matching callsign and email
+    const user = db.prepare('SELECT * FROM users WHERE callsign = ? AND email = ?').get(normalizedCallsign, email);
+
+    if (!user) {
+      // Don't reveal if user exists or not for security
+      return res.json({ message: 'If the callsign and email match our records, you will receive a password reset link.' });
+    }
+
+    // Check for existing valid token
+    const existingToken = db.prepare(
+      'SELECT * FROM password_reset_tokens WHERE user_id = ? AND is_used = 0 AND expires_at > ?'
+    ).get(user.id, Math.floor(Date.now() / 1000));
+
+    let resetToken;
+    if (existingToken) {
+      resetToken = existingToken.reset_token;
+    } else {
+      // Generate new reset token
+      resetToken = uuidv4();
+      const expiresAt = Math.floor(Date.now() / 1000) + (48 * 60 * 60); // 48 hours
+
+      const stmt = db.prepare(`
+        INSERT INTO password_reset_tokens (user_id, reset_token, expires_at)
+        VALUES (?, ?, ?)
+      `);
+      stmt.run(user.id, resetToken, expiresAt);
+    }
+
+    // Send reset email
+    const emailSent = await sendPasswordResetEmail(user.email, user.name, resetToken, user.locale || locale);
+    
+    if (!emailSent) {
+      return res.status(500).json({ error: 'Failed to send reset email. Please try again later.' });
+    }
+
+    res.json({ message: 'If the callsign and email match our records, you will receive a password reset link.' });
+  } catch (error) {
+    console.error('Error in forgot password:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Reset password form
+ */
+router.get('/reset-password', (req, res) => {
+  const { token } = req.query;
+  const locale = res.locals.locale || 'en';
+  const __ = req.__;
+
+  if (!token) {
+    return res.status(400).send('<h1>Invalid reset link</h1>');
+  }
+
+  res.send(`
+<!DOCTYPE html>
+<html lang="${locale}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${__('user.resetPasswordTitle')} - Brandmeister Lastheard Next Generation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 { color: #333; margin-bottom: 10px; font-size: 28px; }
+        .subtitle { color: #666; margin-bottom: 30px; font-size: 14px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; color: #333; margin-bottom: 8px; font-weight: 500; }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input:focus { outline: none; border-color: #667eea; }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); }
+        button:active { transform: translateY(0); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .message {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 6px;
+            display: none;
+        }
+        .message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .message.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>${__('user.resetPasswordTitle')}</h1>
+        <p class="subtitle">${__('user.resetPasswordSubtitle')}</p>
+        
+        <form id="resetPasswordForm">
+            <input type="hidden" id="token" value="${token}">
+            
+            <div class="form-group">
+                <label for="password">${__('user.newPassword')} *</label>
+                <input type="password" id="password" name="password" required placeholder="${__('user.passwordPlaceholder')}">
+            </div>
+            
+            <div class="form-group">
+                <label for="confirmPassword">${__('user.confirmPassword')} *</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="${__('user.confirmPasswordPlaceholder')}">
+            </div>
+            
+            <button type="submit" id="submitBtn">${__('user.resetPasswordButton')}</button>
+        </form>
+        
+        <div id="message" class="message"></div>
+        
+        <a href="/user/login" class="back-link">← ${__('user.backToLogin')}</a>
+    </div>
+
+    <script>
+        document.getElementById('resetPasswordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const messageDiv = document.getElementById('message');
+            const token = document.getElementById('token').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = '${__('user.passwordMismatch')}';
+                messageDiv.style.display = 'block';
+                return;
+            }
+            
+            if (password.length < 8) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = '${__('user.passwordTooShort')}';
+                messageDiv.style.display = 'block';
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = '${__('user.resettingPassword')}';
+            messageDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch('/user/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, password }),
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    messageDiv.className = 'message success';
+                    messageDiv.textContent = data.message;
+                    messageDiv.style.display = 'block';
+                    document.getElementById('resetPasswordForm').reset();
+                    setTimeout(() => {
+                        window.location.href = '/user/login';
+                    }, 2000);
+                } else {
+                    messageDiv.className = 'message error';
+                    messageDiv.textContent = data.error || '${__('user.resetFailed')}';
+                    messageDiv.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '${__('user.resetPasswordButton')}';
+                }
+            } catch (error) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = '${__('user.resetFailed')}';
+                messageDiv.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = '${__('user.resetPasswordButton')}';
+            }
+        });
+    </script>
+</body>
+</html>
+  `);
+});
+
+/**
+ * Reset password - update password
+ */
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({ error: 'Token and password are required' });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+    }
+
+    // Find valid reset token
+    const resetToken = db.prepare(
+      'SELECT * FROM password_reset_tokens WHERE reset_token = ? AND is_used = 0 AND expires_at > ?'
+    ).get(token, Math.floor(Date.now() / 1000));
+
+    if (!resetToken) {
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+
+    // Hash new password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Update user password
+    const updateStmt = db.prepare('UPDATE users SET password_hash = ? WHERE id = ?');
+    updateStmt.run(passwordHash, resetToken.user_id);
+
+    // Mark token as used
+    const markUsedStmt = db.prepare('UPDATE password_reset_tokens SET is_used = 1 WHERE id = ?');
+    markUsedStmt.run(resetToken.id);
+
+    res.json({ message: 'Password reset successfully. You can now login with your new password.' });
+  } catch (error) {
+    console.error('Error in reset password:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+/**
+ * User profile page
+ */
+router.get('/profile', authenticateUser, (req, res) => {
+  const locale = res.locals.locale || 'en';
+  const __ = req.__;
+  const user = req.user;
+  
+  res.send(`
+<!DOCTYPE html>
+<html lang="${locale}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${__('user.profileTitle')} - Brandmeister Lastheard Next Generation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            margin-bottom: 20px;
+        }
+        h1 { color: #333; margin-bottom: 20px; font-size: 28px; }
+        h2 { color: #333; margin-bottom: 15px; font-size: 20px; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
+        .user-info { margin-bottom: 30px; }
+        .user-info p { color: #666; line-height: 1.8; font-size: 16px; }
+        .user-info strong { color: #333; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; color: #333; margin-bottom: 8px; font-weight: 500; }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input:focus { outline: none; border-color: #667eea; }
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); }
+        button:active { transform: translateY(0); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .message {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 6px;
+            display: none;
+        }
+        .message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .message.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .back-link {
+            display: inline-block;
+            padding: 12px 24px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            border: 2px solid #667eea;
+            transition: background 0.2s;
+        }
+        .back-link:hover { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>👤 ${__('user.profileTitle')}</h1>
+            
+            <div class="user-info">
+                <p><strong>${__('user.callsign')}:</strong> ${user.callsign}</p>
+                <p><strong>${__('user.name')}:</strong> ${user.name}</p>
+                <p><strong>${__('user.email')}:</strong> ${user.email}</p>
+            </div>
+
+            <h2>🔑 ${__('user.changePassword')}</h2>
+            <form id="passwordForm">
+                <div class="form-group">
+                    <label for="currentPassword">${__('user.currentPassword')} *</label>
+                    <input type="password" id="currentPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">${__('user.newPassword')} *</label>
+                    <input type="password" id="newPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirmNewPassword">${__('user.confirmNewPassword')} *</label>
+                    <input type="password" id="confirmNewPassword" required>
+                </div>
+                <button type="submit" id="passwordSubmitBtn">${__('user.updatePassword')}</button>
+                <div id="passwordMessage" class="message"></div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>📧 ${__('user.changeEmail')}</h2>
+            <form id="emailForm">
+                <div class="form-group">
+                    <label for="newEmail">${__('user.newEmail')} *</label>
+                    <input type="email" id="newEmail" required placeholder="${__('user.newEmailPlaceholder')}">
+                </div>
+                <div class="form-group">
+                    <label for="password">${__('user.password')} *</label>
+                    <input type="password" id="password" required placeholder="${__('user.confirmWithPassword')}">
+                </div>
+                <button type="submit" id="emailSubmitBtn">${__('user.updateEmail')}</button>
+                <div id="emailMessage" class="message"></div>
+            </form>
+        </div>
+
+        <div class="card" style="text-align: center;">
+            <a href="/" class="back-link">← ${__('user.backToHome')}</a>
+        </div>
+    </div>
+
+    <script>
+        // Password change form
+        document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('passwordSubmitBtn');
+            const messageDiv = document.getElementById('passwordMessage');
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+            
+            if (newPassword !== confirmNewPassword) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = '${__('user.passwordMismatch')}';
+                messageDiv.style.display = 'block';
+                return;
+            }
+            
+            if (newPassword.length < 8) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = '${__('user.passwordTooShort')}';
+                messageDiv.style.display = 'block';
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = '${__('user.updating')}';
+            messageDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch('/user/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ currentPassword, newPassword }),
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    messageDiv.className = 'message success';
+                    messageDiv.textContent = data.message;
+                    messageDiv.style.display = 'block';
+                    document.getElementById('passwordForm').reset();
+                } else {
+                    messageDiv.className = 'message error';
+                    messageDiv.textContent = data.error || '${__('user.updateFailed')}';
+                    messageDiv.style.display = 'block';
+                }
+            } catch (error) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = '${__('user.updateFailed')}';
+                messageDiv.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '${__('user.updatePassword')}';
+            }
+        });
+
+        // Email change form
+        document.getElementById('emailForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('emailSubmitBtn');
+            const messageDiv = document.getElementById('emailMessage');
+            const newEmail = document.getElementById('newEmail').value.trim();
+            const password = document.getElementById('password').value;
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = '${__('user.updating')}';
+            messageDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch('/user/change-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ newEmail, password }),
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    messageDiv.className = 'message success';
+                    messageDiv.textContent = data.message;
+                    messageDiv.style.display = 'block';
+                    document.getElementById('emailForm').reset();
+                } else {
+                    messageDiv.className = 'message error';
+                    messageDiv.textContent = data.error || '${__('user.updateFailed')}';
+                    messageDiv.style.display = 'block';
+                }
+            } catch (error) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = '${__('user.updateFailed')}';
+                messageDiv.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '${__('user.updateEmail')}';
+            }
+        });
+    </script>
+</body>
+</html>
+  `);
+});
+
+/**
+ * Change password
+ */
+router.post('/change-password', authenticateUser, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters long' });
+    }
+
+    // Get user
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+    
+    // Verify current password
+    const passwordMatch = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    // Hash new password
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    const stmt = db.prepare('UPDATE users SET password_hash = ? WHERE id = ?');
+    stmt.run(newPasswordHash, userId);
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Change email - initiate two-step verification
+ */
+router.post('/change-email', authenticateUser, async (req, res) => {
+  try {
+    const { newEmail, password } = req.body;
+    const userId = req.user.id;
+    const locale = res.locals.locale || 'en';
+    const { sendEmailChangeVerificationEmail } = require('../services/emailService');
+
+    if (!newEmail || !password) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    // Get user
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+    
+    // Verify password
+    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Password is incorrect' });
+    }
+
+    // Check if new email is same as current
+    if (newEmail === user.email) {
+      return res.status(400).json({ error: 'New email must be different from current email' });
+    }
+
+    // Check if new email is already in use
+    const existingUser = db.prepare('SELECT * FROM users WHERE email = ? AND id != ?').get(newEmail, userId);
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email address is already in use' });
+    }
+
+    // Generate tokens
+    const oldEmailToken = uuidv4();
+    const expiresAt = Math.floor(Date.now() / 1000) + (24 * 60 * 60); // 24 hours
+
+    // Delete any existing email change tokens for this user
+    db.prepare('DELETE FROM email_change_tokens WHERE user_id = ?').run(userId);
+
+    // Insert new email change token
+    const stmt = db.prepare(`
+      INSERT INTO email_change_tokens (user_id, old_email, new_email, old_email_token, expires_at)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    stmt.run(userId, user.email, newEmail, oldEmailToken, expiresAt);
+
+    // Send verification email to old email address
+    const emailSent = await sendEmailChangeVerificationEmail(user.email, user.name, oldEmailToken, true, user.locale || locale);
+    
+    if (!emailSent) {
+      return res.status(500).json({ error: 'Failed to send verification email' });
+    }
+
+    res.json({ message: 'Verification email sent to your current email address. Please check your inbox.' });
+  } catch (error) {
+    console.error('Error initiating email change:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Verify email change
+ */
+router.get('/verify-email-change', async (req, res) => {
+  try {
+    const { token } = req.query;
+    const locale = res.locals.locale || 'en';
+    const __ = req.__;
+
+    if (!token) {
+      return res.status(400).send('<h1>Invalid verification link</h1>');
+    }
+
+    // Find token in old_email_token column
+    const emailChange = db.prepare(
+      'SELECT * FROM email_change_tokens WHERE old_email_token = ? AND expires_at > ?'
+    ).get(token, Math.floor(Date.now() / 1000));
+
+    if (emailChange) {
+      // This is verification of old email
+      if (emailChange.old_email_verified) {
+        return res.send(`
+<!DOCTYPE html>
+<html lang="${locale}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${__('user.alreadyVerified')} - Brandmeister Lastheard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .icon { font-size: 64px; margin-bottom: 20px; }
+        h1 { color: #333; margin-bottom: 20px; font-size: 28px; }
+        p { color: #666; margin-bottom: 20px; line-height: 1.6; }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">ℹ️</div>
+        <h1>${__('user.alreadyVerified')}</h1>
+        <p>${__('user.emailChangeAlreadyVerified')}</p>
+        <a href="/user/profile" class="back-link">${__('user.backToProfile')}</a>
+    </div>
+</body>
+</html>
+        `);
+      }
+
+      // Mark old email as verified and generate token for new email
+      const newEmailToken = uuidv4();
+      const updateStmt = db.prepare(`
+        UPDATE email_change_tokens 
+        SET old_email_verified = 1, new_email_token = ?
+        WHERE id = ?
+      `);
+      updateStmt.run(newEmailToken, emailChange.id);
+
+      // Get user details
+      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(emailChange.user_id);
+
+      // Send verification email to new email address
+      const { sendEmailChangeVerificationEmail } = require('../services/emailService');
+      await sendEmailChangeVerificationEmail(emailChange.new_email, user.name, newEmailToken, false, user.locale || locale);
+
+      return res.send(`
+<!DOCTYPE html>
+<html lang="${locale}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${__('user.emailVerified')} - Brandmeister Lastheard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .icon { font-size: 64px; margin-bottom: 20px; }
+        .success-icon { color: #28a745; }
+        h1 { color: #333; margin-bottom: 20px; font-size: 28px; }
+        p { color: #666; margin-bottom: 20px; line-height: 1.6; }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon success-icon">✅</div>
+        <h1>${__('user.oldEmailVerified')}</h1>
+        <p>${__('user.oldEmailVerifiedMessage')}</p>
+        <a href="/user/profile" class="back-link">${__('user.backToProfile')}</a>
+    </div>
+</body>
+</html>
+      `);
+    }
+
+    // Find token in new_email_token column
+    const emailChangeNew = db.prepare(
+      'SELECT * FROM email_change_tokens WHERE new_email_token = ? AND old_email_verified = 1 AND expires_at > ?'
+    ).get(token, Math.floor(Date.now() / 1000));
+
+    if (emailChangeNew) {
+      if (emailChangeNew.new_email_verified) {
+        return res.send(`
+<!DOCTYPE html>
+<html lang="${locale}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${__('user.alreadyVerified')} - Brandmeister Lastheard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .icon { font-size: 64px; margin-bottom: 20px; }
+        h1 { color: #333; margin-bottom: 20px; font-size: 28px; }
+        p { color: #666; margin-bottom: 20px; line-height: 1.6; }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">ℹ️</div>
+        <h1>${__('user.alreadyVerified')}</h1>
+        <p>${__('user.emailChangeCompleted')}</p>
+        <a href="/user/profile" class="back-link">${__('user.backToProfile')}</a>
+    </div>
+</body>
+</html>
+        `);
+      }
+
+      // Mark new email as verified and update user's email
+      const updateUserStmt = db.prepare('UPDATE users SET email = ? WHERE id = ?');
+      updateUserStmt.run(emailChangeNew.new_email, emailChangeNew.user_id);
+
+      const updateTokenStmt = db.prepare('UPDATE email_change_tokens SET new_email_verified = 1 WHERE id = ?');
+      updateTokenStmt.run(emailChangeNew.id);
+
+      return res.send(`
+<!DOCTYPE html>
+<html lang="${locale}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${__('user.emailChanged')} - Brandmeister Lastheard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .icon { font-size: 64px; margin-bottom: 20px; }
+        .success-icon { color: #28a745; }
+        h1 { color: #333; margin-bottom: 20px; font-size: 28px; }
+        p { color: #666; margin-bottom: 20px; line-height: 1.6; }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon success-icon">🎉</div>
+        <h1>${__('user.emailChanged')}</h1>
+        <p>${__('user.emailChangedMessage')}</p>
+        <a href="/user/profile" class="back-link">${__('user.backToProfile')}</a>
+    </div>
+</body>
+</html>
+      `);
+    }
+
+    // Token not found or expired
+    return res.status(400).send(`
+<!DOCTYPE html>
+<html lang="${locale}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${__('user.invalidToken')} - Brandmeister Lastheard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .icon { font-size: 64px; margin-bottom: 20px; }
+        .error-icon { color: #dc3545; }
+        h1 { color: #333; margin-bottom: 20px; font-size: 28px; }
+        p { color: #666; margin-bottom: 20px; line-height: 1.6; }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon error-icon">❌</div>
+        <h1>${__('user.invalidToken')}</h1>
+        <p>${__('user.invalidOrExpiredToken')}</p>
+        <a href="/user/profile" class="back-link">${__('user.backToProfile')}</a>
+    </div>
+</body>
+</html>
+    `);
+  } catch (error) {
+    console.error('Error verifying email change:', error);
+    res.status(500).send('Internal server error');
+  }
+});
+
 
 module.exports = router;
