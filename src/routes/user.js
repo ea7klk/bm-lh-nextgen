@@ -67,8 +67,8 @@ const { authenticateUser } = require('../middleware/userAuth');
  *           type: string
  *           description: User's email address
  *         is_active:
- *           type: integer
- *           description: Whether the user account is active (0 or 1)
+ *           type: boolean
+ *           description: Whether the user account is active
  *         created_at:
  *           type: integer
  *           description: Unix timestamp of account creation
