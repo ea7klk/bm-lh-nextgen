@@ -303,6 +303,10 @@ router.get('/', authenticateUser, (req, res) => {
             overflow-y: auto;
             border-radius: 0 0 6px 6px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+        .autocomplete-suggestions.show {
+            display: block;
         }
         .autocomplete-suggestion {
             padding: 10px;
@@ -311,6 +315,12 @@ router.get('/', authenticateUser, (req, res) => {
         }
         .autocomplete-suggestion:hover {
             background-color: #f8f9fa;
+        }
+        .autocomplete-suggestion.selected {
+            background-color: #e8ecf4;
+        }
+        #talkgroup {
+            cursor: pointer;
         }
         .search-container {
             position: relative;
@@ -421,8 +431,8 @@ router.get('/', authenticateUser, (req, res) => {
             <div class="control-group" id="talkgroupGroup">
                 <label for="talkgroup">Talkgroup (ID or Name)</label>
                 <div class="search-container">
-                    <input type="text" id="talkgroup" placeholder="Search talkgroup...">
-                    <div id="talkgroupSuggestions" class="autocomplete-suggestions" style="display: none;"></div>
+                    <input type="text" id="talkgroup" placeholder="Search or select talkgroup..." autocomplete="off">
+                    <div id="talkgroupSuggestions" class="autocomplete-suggestions"></div>
                 </div>
             </div>
             <div class="control-group">
@@ -617,6 +627,7 @@ router.get('/', authenticateUser, (req, res) => {
             if (continent === 'All' || continent === 'Global' || !country) {
                 document.getElementById('talkgroupGroup').style.display = 'none';
                 talkgroupsCache = [];
+                talkgroupSuggestions.classList.remove('show');
                 return;
             }
 
@@ -638,37 +649,108 @@ router.get('/', authenticateUser, (req, res) => {
             }
         }
 
-        // Talkgroup autocomplete
-        document.getElementById('talkgroup').addEventListener('input', function() {
-            const input = this.value.toLowerCase();
-            const suggestions = document.getElementById('talkgroupSuggestions');
-            
-            if (!input) {
-                suggestions.style.display = 'none';
-                return;
-            }
+        // Talkgroup autocomplete/dropdown
+        const talkgroupInput = document.getElementById('talkgroup');
+        const talkgroupSuggestions = document.getElementById('talkgroupSuggestions');
+        let currentFocusIndex = -1;
 
-            const matches = talkgroupsCache.filter(tg => 
-                tg.talkgroup_id.toString().includes(input) || 
-                tg.name.toLowerCase().includes(input)
-            ).slice(0, 10);
-
-            if (matches.length > 0) {
-                suggestions.innerHTML = matches.map(tg => 
-                    '<div class="autocomplete-suggestion" onclick="selectTalkgroup(' + tg.talkgroup_id + ', &quot;' + tg.name.replace(/"/g, "&quot;") + '&quot;)">' +
-                    tg.talkgroup_id + ' - ' + tg.name +
-                    '</div>'
-                ).join('');
-                suggestions.style.display = 'block';
-            } else {
-                suggestions.style.display = 'none';
+        // Show all talkgroups when input is focused (dropdown behavior)
+        talkgroupInput.addEventListener('focus', function() {
+            if (talkgroupsCache.length > 0) {
+                showTalkgroupSuggestions('');
             }
         });
 
+        // Filter talkgroups as user types (search behavior)
+        talkgroupInput.addEventListener('input', function() {
+            const input = this.value.toLowerCase();
+            showTalkgroupSuggestions(input);
+        });
+
+        // Handle keyboard navigation
+        talkgroupInput.addEventListener('keydown', function(e) {
+            const suggestions = talkgroupSuggestions.getElementsByClassName('autocomplete-suggestion');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                currentFocusIndex++;
+                if (currentFocusIndex >= suggestions.length) currentFocusIndex = 0;
+                setActiveItem(suggestions);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                currentFocusIndex--;
+                if (currentFocusIndex < 0) currentFocusIndex = suggestions.length - 1;
+                setActiveItem(suggestions);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (currentFocusIndex > -1 && suggestions[currentFocusIndex]) {
+                    suggestions[currentFocusIndex].click();
+                }
+            } else if (e.key === 'Escape') {
+                talkgroupSuggestions.classList.remove('show');
+            }
+        });
+
+        function setActiveItem(suggestions) {
+            // Remove all selected classes
+            for (let i = 0; i < suggestions.length; i++) {
+                suggestions[i].classList.remove('selected');
+            }
+            // Add selected class to current item
+            if (currentFocusIndex >= 0 && currentFocusIndex < suggestions.length) {
+                suggestions[currentFocusIndex].classList.add('selected');
+                suggestions[currentFocusIndex].scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        function showTalkgroupSuggestions(filterText) {
+            currentFocusIndex = -1;
+            
+            if (talkgroupsCache.length === 0) {
+                talkgroupSuggestions.classList.remove('show');
+                return;
+            }
+
+            let matches;
+            if (!filterText) {
+                // Show all talkgroups when no filter
+                matches = talkgroupsCache.slice(0, 50); // Limit to 50 for performance
+            } else {
+                // Filter talkgroups based on search text
+                matches = talkgroupsCache.filter(tg => 
+                    tg.talkgroup_id.toString().includes(filterText) || 
+                    tg.name.toLowerCase().includes(filterText)
+                ).slice(0, 50);
+            }
+
+            if (matches.length > 0) {
+                talkgroupSuggestions.innerHTML = matches.map(tg => 
+                    '<div class="autocomplete-suggestion" data-id="' + tg.talkgroup_id + '" data-name="' + tg.name.replace(/"/g, "&quot;") + '">' +
+                    '<strong>' + tg.talkgroup_id + '</strong> - ' + tg.name +
+                    '</div>'
+                ).join('');
+                
+                // Add click handlers
+                const suggestionElements = talkgroupSuggestions.getElementsByClassName('autocomplete-suggestion');
+                for (let el of suggestionElements) {
+                    el.addEventListener('click', function() {
+                        selectTalkgroup(this.getAttribute('data-id'), this.getAttribute('data-name'));
+                    });
+                }
+                
+                talkgroupSuggestions.classList.add('show');
+            } else {
+                talkgroupSuggestions.classList.remove('show');
+            }
+        }
+
         function selectTalkgroup(id, name) {
-            document.getElementById('talkgroup').value = id + ' - ' + name;
-            document.getElementById('talkgroupSuggestions').style.display = 'none';
+            talkgroupInput.value = id + ' - ' + name;
+            talkgroupSuggestions.classList.remove('show');
+            currentFocusIndex = -1;
+            savePreferences();
             loadGroupedData();
+            loadCallsignData();
         }
 
         // Load grouped data (talkgroups)
@@ -969,7 +1051,7 @@ router.get('/', authenticateUser, (req, res) => {
         // Close autocomplete when clicking outside
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.search-container')) {
-                document.getElementById('talkgroupSuggestions').style.display = 'none';
+                talkgroupSuggestions.classList.remove('show');
             }
         });
 
