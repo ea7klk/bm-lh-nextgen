@@ -808,7 +808,8 @@ async function sendBroadcastEmail(subject, message) {
     // Send emails sequentially with a small delay to avoid hitting email provider rate limits
     // A 100ms delay provides a balance between speed and reliability
     // For large user bases (>1000), consider implementing a queue-based system
-    for (const user of users) {
+    for (let i = 0; i < users.length; i++) {
+      const user = users[i];
       const locale = user.locale || 'en';
       i18n.setLocale(locale);
 
@@ -891,7 +892,7 @@ ${i18n.__('email.automatedEmail')}
         console.log(`Broadcast email sent to ${user.email}`);
         
         // Add a small delay between emails to help with rate limiting
-        if (users.indexOf(user) < users.length - 1) {
+        if (i < users.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
       } catch (error) {
