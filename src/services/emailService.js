@@ -263,13 +263,14 @@ async function sendApiKeyEmail(email, name, apiKey, locale = 'en') {
                             <!-- Usage Instructions -->
                             <h3 style="color: #333333; margin: 0 0 15px; font-size: 18px;">${i18n.__('email.howToUseTitle')}</h3>
                             
-                            <p style="color: #666666; line-height: 1.6; margin: 0 0 15px; font-size: 14px;">${i18n.__('email.includeKeyInHeader')} <code style="background-color: #f8f9fa; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace;">X-API-Key</code> ${i18n.__('email.headerText')}</p>
+                            <p style="color: #666666; line-height: 1.6; margin: 0 0 15px; font-size: 14px;">Your API key is ready for future authenticated features. Currently, all data endpoints are publicly accessible:</p>
                             
                             <!-- Example Code -->
-                            <div style="background-color: #2d2d2d; border-radius: 6px; padding: 16px; margin: 0 0 30px; overflow-x: auto;">
-                                <pre style="color: #ffffff; margin: 0; font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.6;">curl -H "X-API-Key: ${apiKey}" \\
-     ${BASE_URL}/api/lastheard</pre>
+                            <div style="background-color: #2d2d2d; border-radius: 6px; padding: 16px; margin: 0 0 15px; overflow-x: auto;">
+                                <pre style="color: #ffffff; margin: 0; font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.6;">curl ${BASE_URL}/public/lastheard?limit=10</pre>
                             </div>
+                            
+                            <p style="color: #666666; line-height: 1.6; margin: 0 0 30px; font-size: 14px;">When authenticated endpoints are added, include your key via <code style="background-color: #f8f9fa; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace;">X-API-Key</code> header.</p>
                             
                             <!-- Info Box -->
                             <div style="background-color: #e7f3ff; border-left: 4px solid #667eea; padding: 16px; border-radius: 6px; margin: 0 0 30px;">
@@ -311,11 +312,12 @@ ${i18n.__('email.validUntil')} ${expiryDateFormatted}
 ⚠️ ${i18n.__('email.importantWarning').toUpperCase()}: ${i18n.__('email.keepSafe')}
 
 ${i18n.__('email.howToUseTitle').toUpperCase()}
-${i18n.__('email.includeKeyInHeader')} X-API-Key ${i18n.__('email.headerText')}
+Your API key is ready for future authenticated features. Currently, all data endpoints are publicly accessible:
 
 Example:
-curl -H "X-API-Key: ${apiKey}" \\
-     ${BASE_URL}/api/lastheard
+curl ${BASE_URL}/public/lastheard?limit=10
+
+When authenticated endpoints are added, include your key via X-API-Key header.
 
 📚 ${i18n.__('email.apiDocumentation')}
 ${i18n.__('email.visitDocs')} ${BASE_URL}/api-docs ${i18n.__('email.forCompleteDocs')}

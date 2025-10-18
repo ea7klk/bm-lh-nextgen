@@ -4,6 +4,62 @@ This document chronicles the development history and changes made to the Brandme
 
 ---
 
+## Code Optimization and Refactoring (October 2025)
+
+### API Endpoint Cleanup
+
+**Objective**: Remove unused Swagger API endpoints and improve code organization
+
+#### Changes Made
+
+1. **Removed Unused API Endpoints**
+   - Removed authenticated `/api/lastheard/*` endpoints (not used in frontend)
+   - Removed authenticated `/api/talkgroups/*` endpoints (duplicates of public endpoints)
+   - Kept essential `/health` endpoint as required
+   - All functionality now available through public endpoints in `/public/*`
+
+2. **Created Database Service Layer** (`src/services/databaseService.js`)
+   - **LastheardService**: Centralized data access for lastheard queries
+     - `getEntries()` - Get recent entries with filtering
+     - `getGroupedByTalkgroup()` - Aggregate data by talkgroup
+     - `getGroupedByCallsign()` - Aggregate data by callsign
+     - `getStatistics()` - Get system statistics
+   - **TalkgroupService**: Centralized data access for talkgroup queries
+     - `getContinents()` - Get unique continents
+     - `getCountriesByContinent()` - Get countries for a continent
+     - `getTalkgroups()` - Get talkgroups for continent/country
+   
+3. **Refactored Public Routes** (`src/routes/public.js`)
+   - All routes now use the database service layer
+   - Improved code organization and maintainability
+   - Better separation of concerns (data access vs presentation)
+   - Added comprehensive code comments
+
+4. **Documentation Updates**
+   - Updated README.md with current API endpoint list
+   - Added architecture section explaining service layer design
+   - Updated project structure documentation
+   - Documented code quality improvements
+
+#### Benefits
+
+- **Reduced API Surface**: Removed 10 unused endpoints
+- **Better Code Organization**: Clear separation between data access and presentation
+- **Improved Maintainability**: Database queries centralized in service layer
+- **Enhanced Testability**: Service layer can be tested independently
+- **Code Reusability**: Common queries available as reusable methods
+- **Cleaner Architecture**: Follows best practices for separation of concerns
+
+#### Files Modified
+- `src/services/databaseService.js` - New service layer (created)
+- `src/routes/public.js` - Refactored to use service layer
+- `src/routes/lastheard.js` - Removed unused endpoints
+- `src/routes/talkgroups.js` - Removed unused endpoints
+- `README.md` - Updated API documentation
+- `HISTORY.md` - Added this entry
+
+---
+
 ## Docker Implementation
 
 ### Multi-Stage Dockerfile

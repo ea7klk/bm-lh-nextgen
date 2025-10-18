@@ -449,11 +449,6 @@ router.get('/', optionalAuthentication, (req, res) => {
                 ${__('home.footer.sourceCode')} <a href="https://github.com/ea7klk/bm-lh-nextgen" target="_blank" rel="noopener noreferrer">${__('home.footer.sourceCodeLink')}</a> ${__('home.footer.license')}<br>
                 ${__('home.footer.contact')} <a href="https://github.com/ea7klk/bm-lh-nextgen/issues" target="_blank" rel="noopener noreferrer">${__('home.footer.githubIssues')}</a> ${__('home.footer.or')} volker at ea7klk dot es
             </p>
-            <p style="margin-top: 15px;">
-                <a href="/api/auth/request-key">${__('home.footer.requestApiKey')}</a> | 
-                <a href="/api-docs">${__('home.footer.apiDocumentation')}</a> | 
-                <a href="/admin">${__('home.footer.adminPanel')}</a>
-            </p>
         </div>
     </div>
 

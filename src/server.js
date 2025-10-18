@@ -11,7 +11,6 @@ const { startBrandmeisterService } = require('./services/brandmeisterService');
 const i18n = require('./config/i18n');
 const { languageMiddleware } = require('./middleware/language');
 const lastheardRoutes = require('./routes/lastheard');
-const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const talkgroupsRoutes = require('./routes/talkgroups');
 const publicRoutes = require('./routes/public');
@@ -32,7 +31,7 @@ app.use(languageMiddleware);
 // Initialize database
 initDatabase();
 
-// Start scheduler for API key expiry checks and cleanup
+// Start scheduler for cleanup tasks
 startScheduler();
 
 // Start Brandmeister websocket service
@@ -49,9 +48,6 @@ app.use('/advanced', advancedRoutes);
 
 // Public API routes (no authentication required for viewing)
 app.use('/public', publicRoutes);
-
-// Auth routes (public, no authentication required)
-app.use('/api/auth', authRoutes);
 
 // User routes (public registration/login, some protected)
 app.use('/user', userRoutes);

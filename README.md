@@ -15,9 +15,7 @@ A production-ready Node.js REST API with real-time web interface for tracking Br
 ### API & Backend
 - **RESTful API** - Built with Express.js and comprehensive Swagger documentation
 - **SQLite Database** - Local data storage with efficient querying
-- **API Key Authentication** - Email verification with 365-day expiration
-- **Professional Email System** - Styled HTML templates for verification and notifications
-- **Automated Reminders** - Expiry notifications at 30, 15, and 5 days
+- **User Authentication** - Secure registration and login system
 - **Smart Filtering** - Automatic exclusion of Local talkgroup (ID 9)
 
 ### DevOps & Security
@@ -155,42 +153,31 @@ Visit `http://localhost:3000` to access the modern web interface:
 
 ### API Access
 
-#### 1. Public Endpoints (No Authentication)
-Access these directly without an API key:
+#### Public Endpoints (No Authentication Required)
+
+All data endpoints are publicly accessible without authentication:
 
 - `GET /public/lastheard` - Recent lastheard entries (with filtering)
+- `GET /public/lastheard/grouped` - Grouped data by talkgroup
+- `GET /public/lastheard/callsigns` - Grouped data by callsign
 - `GET /public/stats` - System statistics
-- Example: `/public/lastheard?callsign=EA7KLK&limit=10`
+- `GET /public/continents` - List of continents
+- `GET /public/countries?continent=<continent>` - Countries for a continent
+- `GET /public/talkgroups?continent=<continent>&country=<country>` - Talkgroups
 
-#### 2. Request an API Key
-
-For authenticated API access:
-
-1. **Request Key**: Visit `http://localhost:3000/api/auth/request-key`
-2. **Check Email**: Click the verification link sent to your email
-3. **Receive Key**: Your API key will be displayed and emailed to you
-4. **Use Key**: Include in requests via `X-API-Key` header
-
+**Example:**
 ```bash
-curl -H "X-API-Key: your-api-key-here" \
-  http://localhost:3000/api/lastheard
+curl http://localhost:3000/public/lastheard?callsign=EA7KLK&limit=10
 ```
-
-**API Key Features:**
-- 365-day validity period
-- Automatic expiry reminders (30, 15, 5 days before)
-- Automatic cleanup of expired keys
-- Last usage tracking
 
 ### Admin Panel
 
-Access the password-protected admin panel at `/admin` to manage API keys and verifications.
+Access the password-protected admin panel at `/admin` to manage users.
 
 **Features:**
-- View all API keys with status, dates, and usage
-- Delete API keys
-- View email verifications (verified and pending)
-- Delete old verification records
+- View all registered users with status and activity
+- Activate/deactivate users
+- Delete user accounts
 - Real-time statistics dashboard
 
 **Access:**
@@ -211,30 +198,43 @@ Test endpoints directly from your browser with the interactive interface.
 
 ### Frontend (Public - No Authentication)
 - `GET /` - Homepage with real-time lastheard display
+- `GET /advanced` - Advanced functions page (requires user authentication)
 
 ### Public API (No Authentication)
-- `GET /public/lastheard` - Recent entries with optional filtering
-  - Query params: `limit`, `callsign`, `talkgroup`
-- `GET /public/stats` - System statistics
+The following endpoints are publicly accessible without authentication:
 
-### Authentication
-- `GET /api/auth/request-key` - API key request form
-- `POST /api/auth/request-key` - Submit API key request
-- `GET /api/auth/verify-email?token=<token>` - Verify email and receive key
+**Lastheard Endpoints:**
+- `GET /public/lastheard` - Recent lastheard entries with optional filtering
+  - Query params: `limit`, `callsign`, `talkgroup`
+- `GET /public/lastheard/grouped` - Grouped lastheard data by talkgroup
+  - Query params: `timeRange`, `limit`, `continent`, `country`, `talkgroup`
+- `GET /public/lastheard/callsigns` - Grouped lastheard data by callsign
+  - Query params: `timeRange`, `limit`, `callsign`, `continent`, `country`, `talkgroup`
+- `GET /public/stats` - System statistics (total entries, 24h activity, unique callsigns/talkgroups)
+
+**Talkgroup Endpoints:**
+- `GET /public/continents` - List all unique continents
+- `GET /public/countries?continent=<continent>` - List countries for a continent
+- `GET /public/talkgroups?continent=<continent>&country=<country>` - List talkgroups for a continent/country
+
+### System Endpoints
+- `GET /health` - Health check endpoint (always available)
+
+### Authentication & User Management
+- `GET /user/register` - User registration form
+- `POST /user/register` - Submit user registration
+- `GET /user/login` - User login form
+- `POST /user/login` - Submit user login
+- `POST /user/logout` - User logout
+- `GET /user/profile` - User profile page (requires authentication)
+- `POST /user/change-password` - Change user password (requires authentication)
+- `POST /user/change-email` - Change user email (requires authentication)
 
 ### Admin (Password Protected)
 - `GET /admin` - Admin panel interface
-- `GET /admin/api-keys` - List all API keys
-- `DELETE /admin/api-keys/:id` - Delete an API key
-- `GET /admin/verifications` - List all email verifications
-- `DELETE /admin/verifications/:id` - Delete a verification
-
-### Lastheard (API Key Required)
-- `GET /health` - Health check
-- `GET /api/lastheard` - Recent lastheard entries
-- `GET /api/lastheard/:id` - Specific entry by ID
-- `GET /api/lastheard/callsign/:callsign` - Entries by callsign
-- `POST /api/lastheard` - Create new entry
+- `GET /admin/users` - List all users
+- `PUT /admin/users/:id/status` - Update user status
+- `DELETE /admin/users/:id` - Delete a user
 
 ## 💾 Database
 
@@ -247,11 +247,7 @@ SQLite database automatically created at `data/lastheard.db` on first run.
 - `DestinationCall`, `DestinationName`, `Start`, `Stop`
 - `TalkerAlias`, `duration`, `created_at`
 
-**api_keys** - API authentication
-- `id`, `api_key` (UUID), `name`, `email`, `is_active`
-- `created_at`, `expires_at` (365 days), `last_used_at`
-
-**email_verifications** - Email verification tracking
+**talkgroups** - Talkgroup information
 - `id`, `email`, `name`, `verification_token` (UUID)
 - `is_verified`, `created_at`, `expires_at`
 
@@ -267,22 +263,34 @@ SQLite database automatically created at `data/lastheard.db` on first run.
 bm-lh-nextgen/
 ├── src/
 │   ├── config/
-│   │   └── swagger.js           # Swagger/OpenAPI configuration
+│   │   ├── swagger.js           # Swagger/OpenAPI configuration
+│   │   └── i18n.js              # Internationalization setup
 │   ├── db/
-│   │   └── database.js          # Database initialization
+│   │   └── database.js          # Database initialization and schema
 │   ├── middleware/
-│   │   └── auth.js              # API key authentication
+│   │   ├── auth.js              # API key authentication
+│   │   ├── adminAuth.js         # Admin authentication
+│   │   ├── userAuth.js          # User authentication
+│   │   └── language.js          # Language detection
 │   ├── routes/
-│   │   ├── auth.js              # Authentication routes
-│   │   ├── lastheard.js         # Lastheard API routes
-│   │   ├── public.js            # Public API routes
-│   │   └── talkgroups.js        # Talkgroup routes
+│   │   ├── auth.js              # API key authentication routes
+│   │   ├── user.js              # User registration and login routes
+│   │   ├── admin.js             # Admin panel routes
+│   │   ├── frontend.js          # Public frontend routes
+│   │   ├── advanced.js          # Advanced functions routes (authenticated)
+│   │   ├── public.js            # Public API routes (no auth required)
+│   │   ├── lastheard.js         # Reserved for future authenticated endpoints
+│   │   └── talkgroups.js        # Reserved for future authenticated endpoints
 │   ├── services/
+│   │   ├── databaseService.js   # Database access layer (new)
 │   │   ├── emailService.js      # Email sending service
 │   │   ├── schedulerService.js  # Expiry scheduler
 │   │   ├── brandmeisterService.js # Real-time data ingestion
-│   │   └── talkgroupsService.js # Talkgroup management
+│   │   └── talkgroupsService.js # Talkgroup data management
+│   ├── utils/
+│   │   └── htmlHelpers.js       # HTML utility functions
 │   └── server.js                # Main application entry point
+├── locales/                     # Translation files (en, es, de, fr)
 ├── data/                        # SQLite database directory
 ├── .github/workflows/           # CI/CD workflows
 ├── Dockerfile                   # Multi-stage container build
@@ -290,6 +298,32 @@ bm-lh-nextgen/
 ├── .env.example                 # Environment variables template
 └── package.json                 # Dependencies and scripts
 ```
+
+## 🏗️ Code Architecture
+
+The application follows best practices for separation of concerns and modularity:
+
+### Service Layer (`src/services/`)
+- **databaseService.js** - Centralized data access layer that abstracts database operations
+  - `LastheardService` - Methods for querying lastheard data
+  - `TalkgroupService` - Methods for querying talkgroup data
+  - Benefits: Reusable queries, easier testing, consistent error handling
+
+### Presentation Layer (`src/routes/`)
+- Routes handle HTTP requests and responses
+- Business logic is delegated to service layer
+- Clean separation between data access and presentation
+
+### Database Layer (`src/db/`)
+- Database initialization and schema management
+- Automatic migrations for schema updates
+- Connection pooling with better-sqlite3
+
+### Key Design Improvements
+1. **Separation of Concerns**: Database access is isolated in the service layer
+2. **Code Reusability**: Common queries are centralized and reusable
+3. **Maintainability**: Changes to database queries are isolated to one location
+4. **Testability**: Service layer can be tested independently of routes
 
 ## 🐳 Docker Deployment
 
