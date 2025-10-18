@@ -669,29 +669,33 @@ router.get('/', authenticateUser, (req, res) => {
                 talkgroupsCache.slice(0, 20);
 
             if (matches.length > 0) {
-                suggestions.innerHTML = matches.map(tg => 
-                    '<div class="autocomplete-suggestion" onclick="selectTalkgroup(' + tg.talkgroup_id + ', &quot;' + tg.name.replace(/"/g, "&quot;") + '&quot;)">' +
-                    tg.talkgroup_id + ' - ' + tg.name +
-                    '</div>'
-                ).join('');
+                // Clear previous suggestions
+                suggestions.innerHTML = '';
+                
+                // Create suggestion elements safely
+                matches.forEach(tg => {
+                    const div = document.createElement('div');
+                    div.className = 'autocomplete-suggestion';
+                    div.textContent = tg.talkgroup_id + ' - ' + tg.name;
+                    div.addEventListener('click', function() {
+                        selectTalkgroup(tg.talkgroup_id, tg.name);
+                    });
+                    suggestions.appendChild(div);
+                });
+                
                 suggestions.style.display = 'block';
             } else {
                 suggestions.style.display = 'none';
             }
         }
 
-        // Show dropdown on focus
+        // Show dropdown on focus (also handles clicks)
         document.getElementById('talkgroup').addEventListener('focus', function() {
             showTalkgroupSuggestions(this.value);
         });
 
         // Filter on input
         document.getElementById('talkgroup').addEventListener('input', function() {
-            showTalkgroupSuggestions(this.value);
-        });
-
-        // Show dropdown on click
-        document.getElementById('talkgroup').addEventListener('click', function() {
             showTalkgroupSuggestions(this.value);
         });
 
