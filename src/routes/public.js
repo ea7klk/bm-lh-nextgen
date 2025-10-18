@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { db } = require('../db/database');
+const { LastheardService, TalkgroupService } = require('../services/databaseService');
 
 /**
  * @swagger
@@ -49,6 +49,10 @@ const { db } = require('../db/database');
  *               items:
  *                 type: object
  */
+/**
+ * Get grouped lastheard data by talkgroup
+ * Groups lastheard entries by talkgroup and returns aggregated statistics
+ */
 router.get('/lastheard/grouped', (req, res) => {
   try {
     const timeRange = req.query.timeRange || '5m';
@@ -59,58 +63,27 @@ router.get('/lastheard/grouped', (req, res) => {
     
     // Calculate start time based on time range
     const now = Math.floor(Date.now() / 1000);
-    let startTime;
+    const timeMap = {
+      '5m': 5 * 60,
+      '15m': 15 * 60,
+      '30m': 30 * 60,
+      '1h': 60 * 60,
+      '2h': 2 * 60 * 60,
+      '6h': 6 * 60 * 60,
+      '12h': 12 * 60 * 60,
+      '24h': 24 * 60 * 60
+    };
+    const startTime = now - (timeMap[timeRange] || timeMap['5m']);
     
-    switch (timeRange) {
-      case '5m': startTime = now - (5 * 60); break;
-      case '15m': startTime = now - (15 * 60); break;
-      case '30m': startTime = now - (30 * 60); break;
-      case '1h': startTime = now - (60 * 60); break;
-      case '2h': startTime = now - (2 * 60 * 60); break;
-      case '6h': startTime = now - (6 * 60 * 60); break;
-      case '12h': startTime = now - (12 * 60 * 60); break;
-      case '24h': startTime = now - (24 * 60 * 60); break;
-      default: startTime = now - (5 * 60);
-    }
+    // Use database service to get grouped data
+    const entries = LastheardService.getGroupedByTalkgroup({
+      startTime,
+      limit,
+      continent,
+      country,
+      talkgroup: talkgroup ? parseInt(talkgroup) : null
+    });
     
-    // Build query for filtering by continent/country via talkgroups table
-    let whereClause = 'WHERE Start >= ? AND DestinationID != 9';
-    const params = [startTime];
-    
-    if (continent && continent !== 'All') {
-      whereClause += ' AND DestinationID IN (SELECT talkgroup_id FROM talkgroups WHERE continent = ?)';
-      params.push(continent);
-      
-      if (country) {
-        whereClause += ' AND DestinationID IN (SELECT talkgroup_id FROM talkgroups WHERE country = ?)';
-        params.push(country);
-      }
-    }
-    
-    // Add talkgroup filter
-    if (talkgroup) {
-      whereClause += ' AND DestinationID = ?';
-      params.push(parseInt(talkgroup));
-    }
-    // When continent is 'All' or not specified, show all talkgroups
-    
-    // Group by talkgroup and get count and total duration
-    const query = `
-      SELECT 
-        DestinationID as destinationId,
-        DestinationName as destinationName,
-        COUNT(*) as count,
-        SUM(duration) as totalDuration
-      FROM lastheard
-      ${whereClause}
-      GROUP BY DestinationID, DestinationName
-      ORDER BY count DESC
-      LIMIT ?
-    `;
-    params.push(limit);
-    
-    const stmt = db.prepare(query);
-    const entries = stmt.all(...params);
     res.json(entries);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -152,30 +125,23 @@ router.get('/lastheard/grouped', (req, res) => {
  *               items:
  *                 type: object
  */
+/**
+ * Get recent lastheard entries with optional filtering
+ * Public endpoint - no authentication required
+ */
 router.get('/lastheard', (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 50, 100);
     const callsign = req.query.callsign;
     const talkgroup = req.query.talkgroup;
     
-    let query = 'SELECT * FROM lastheard WHERE DestinationID != 9';
-    const params = [];
+    // Use database service to get entries
+    const entries = LastheardService.getEntries({
+      limit,
+      callsign,
+      talkgroup: talkgroup ? parseInt(talkgroup) : null
+    });
     
-    if (callsign) {
-      query += ' AND SourceCall LIKE ?';
-      params.push(`%${callsign}%`);
-    }
-    
-    if (talkgroup) {
-      query += ' AND DestinationID = ?';
-      params.push(parseInt(talkgroup));
-    }
-    
-    query += ' ORDER BY Start DESC LIMIT ?';
-    params.push(limit);
-    
-    const stmt = db.prepare(query);
-    const entries = stmt.all(...params);
     res.json(entries);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -194,21 +160,14 @@ router.get('/lastheard', (req, res) => {
  *       200:
  *         description: Statistics object
  */
+/**
+ * Get statistics about lastheard data
+ * Returns aggregated statistics for display
+ */
 router.get('/stats', (req, res) => {
   try {
-    const totalEntries = db.prepare('SELECT COUNT(*) as count FROM lastheard WHERE DestinationID != 9').get();
-    const recentEntries = db.prepare('SELECT COUNT(*) as count FROM lastheard WHERE Start > ? AND DestinationID != 9').get(
-      Math.floor(Date.now() / 1000) - 24 * 60 * 60 // last 24 hours
-    );
-    const uniqueCallsigns = db.prepare('SELECT COUNT(DISTINCT SourceCall) as count FROM lastheard WHERE DestinationID != 9').get();
-    const uniqueTalkgroups = db.prepare('SELECT COUNT(DISTINCT DestinationID) as count FROM lastheard WHERE DestinationID != 9').get();
-    
-    res.json({
-      totalEntries: totalEntries.count,
-      last24Hours: recentEntries.count,
-      uniqueCallsigns: uniqueCallsigns.count,
-      uniqueTalkgroups: uniqueTalkgroups.count
-    });
+    const stats = LastheardService.getStatistics();
+    res.json(stats);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -226,11 +185,13 @@ router.get('/stats', (req, res) => {
  *       200:
  *         description: List of continent names
  */
+/**
+ * Get list of unique continents from talkgroups
+ * Used for filtering in the frontend
+ */
 router.get('/continents', (req, res) => {
   try {
-    const stmt = db.prepare('SELECT DISTINCT continent FROM talkgroups WHERE continent IS NOT NULL ORDER BY continent');
-    const continents = stmt.all().map(row => row.continent);
-    // Return all continents (including Global) - the frontend will add "All" option
+    const continents = TalkgroupService.getContinents();
     res.json(continents);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -256,18 +217,14 @@ router.get('/continents', (req, res) => {
  *       200:
  *         description: List of countries
  */
+/**
+ * Get list of countries for a specific continent
+ * Used for filtering in the frontend
+ */
 router.get('/countries', (req, res) => {
   try {
     const continent = req.query.continent;
-    if (!continent || continent === 'All' || continent === 'Global') {
-      return res.json([]);
-    }
-    
-    const stmt = db.prepare('SELECT DISTINCT country, full_country_name FROM talkgroups WHERE continent = ? ORDER BY country');
-    const countries = stmt.all(continent).map(row => ({
-      label: row.full_country_name || row.country,
-      value: row.country
-    }));
+    const countries = TalkgroupService.getCountriesByContinent(continent);
     res.json(countries);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -298,27 +255,16 @@ router.get('/countries', (req, res) => {
  *       200:
  *         description: List of talkgroups
  */
+/**
+ * Get list of talkgroups for a specific continent and country
+ * Used for filtering in the advanced functions page
+ */
 router.get('/talkgroups', (req, res) => {
   try {
     const continent = req.query.continent;
     const country = req.query.country;
     
-    if (!continent || continent === 'All' || continent === 'Global') {
-      return res.json([]);
-    }
-    
-    let query = 'SELECT talkgroup_id, name FROM talkgroups WHERE continent = ?';
-    const params = [continent];
-    
-    if (country) {
-      query += ' AND country = ?';
-      params.push(country);
-    }
-    
-    query += ' ORDER BY talkgroup_id';
-    
-    const stmt = db.prepare(query);
-    const talkgroups = stmt.all(...params);
+    const talkgroups = TalkgroupService.getTalkgroups({ continent, country });
     res.json(talkgroups);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -377,6 +323,10 @@ router.get('/talkgroups', (req, res) => {
  *               items:
  *                 type: object
  */
+/**
+ * Get grouped lastheard data by callsign
+ * Groups lastheard entries by callsign and returns aggregated statistics
+ */
 router.get('/lastheard/callsigns', (req, res) => {
   try {
     const timeRange = req.query.timeRange || '5m';
@@ -388,64 +338,28 @@ router.get('/lastheard/callsigns', (req, res) => {
     
     // Calculate start time based on time range
     const now = Math.floor(Date.now() / 1000);
-    let startTime;
+    const timeMap = {
+      '5m': 5 * 60,
+      '15m': 15 * 60,
+      '30m': 30 * 60,
+      '1h': 60 * 60,
+      '2h': 2 * 60 * 60,
+      '6h': 6 * 60 * 60,
+      '12h': 12 * 60 * 60,
+      '24h': 24 * 60 * 60
+    };
+    const startTime = now - (timeMap[timeRange] || timeMap['5m']);
     
-    switch (timeRange) {
-      case '5m': startTime = now - (5 * 60); break;
-      case '15m': startTime = now - (15 * 60); break;
-      case '30m': startTime = now - (30 * 60); break;
-      case '1h': startTime = now - (60 * 60); break;
-      case '2h': startTime = now - (2 * 60 * 60); break;
-      case '6h': startTime = now - (6 * 60 * 60); break;
-      case '12h': startTime = now - (12 * 60 * 60); break;
-      case '24h': startTime = now - (24 * 60 * 60); break;
-      default: startTime = now - (5 * 60);
-    }
+    // Use database service to get grouped data
+    const entries = LastheardService.getGroupedByCallsign({
+      startTime,
+      limit,
+      callsign: callsignFilter,
+      continent,
+      country,
+      talkgroup: talkgroup ? parseInt(talkgroup) : null
+    });
     
-    // Build query
-    let whereClause = 'WHERE Start >= ? AND DestinationID != 9';
-    const params = [startTime];
-    
-    if (callsignFilter) {
-      whereClause += ' AND SourceCall LIKE ?';
-      params.push(callsignFilter);
-    }
-    
-    // Add continent filter
-    if (continent && continent !== 'All') {
-      whereClause += ' AND DestinationID IN (SELECT talkgroup_id FROM talkgroups WHERE continent = ?)';
-      params.push(continent);
-      
-      // Add country filter
-      if (country) {
-        whereClause += ' AND DestinationID IN (SELECT talkgroup_id FROM talkgroups WHERE country = ?)';
-        params.push(country);
-      }
-    }
-    
-    // Add talkgroup filter
-    if (talkgroup) {
-      whereClause += ' AND DestinationID = ?';
-      params.push(parseInt(talkgroup));
-    }
-    
-    // Group by callsign and get count and total duration
-    const query = `
-      SELECT 
-        SourceCall as callsign,
-        MAX(SourceName) as name,
-        COUNT(*) as count,
-        SUM(duration) as totalDuration
-      FROM lastheard
-      ${whereClause}
-      GROUP BY SourceCall
-      ORDER BY count DESC
-      LIMIT ?
-    `;
-    params.push(limit);
-    
-    const stmt = db.prepare(query);
-    const entries = stmt.all(...params);
     res.json(entries);
   } catch (error) {
     res.status(500).json({ error: error.message });
