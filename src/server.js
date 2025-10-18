@@ -29,10 +29,15 @@ app.use(i18n.init);
 app.use(languageMiddleware);
 
 // Initialize database
-initDatabase();
+initDatabase().catch((error) => {
+  console.error('Failed to initialize database:', error);
+  process.exit(1);
+});
 
 // Start scheduler for cleanup tasks
-startScheduler();
+startScheduler().catch((error) => {
+  console.error('Failed to start scheduler:', error);
+});
 
 // Start Brandmeister websocket service
 startBrandmeisterService();

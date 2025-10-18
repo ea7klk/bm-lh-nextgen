@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
-const { db } = require('../db/database');
+const { pool } = require('../db/database');
 const { sendVerificationEmail } = require('../services/emailService');
 const { authenticateUser } = require('../middleware/userAuth');
 
@@ -90,7 +90,7 @@ const { authenticateUser } = require('../middleware/userAuth');
 /**
  * User registration form
  */
-router.get('/register', (req, res) => {
+router.get('/register', async (req, res) => {
   const locale = res.locals.locale || 'en';
   const __ = req.__;
   
@@ -413,7 +413,8 @@ router.post('/register', async (req, res) => {
     const normalizedCallsign = callsign.trim().toUpperCase();
 
     // Check if callsign or email already exists
-    const existingUser = db.prepare('SELECT * FROM users WHERE callsign = ? OR email = ?').get(normalizedCallsign, email);
+    const result_existingUser = await pool.query(`SELECT * FROM users WHERE callsign = $1 OR email = $2`, [normalizedCallsign, email]);
+    const existingUser = result_existingUser.rows[0] || null;
     if (existingUser) {
       return res.status(400).json({ 
         error: 'Callsign or email already registered',
@@ -422,9 +423,11 @@ router.post('/register', async (req, res) => {
     }
 
     // Check if there's a pending verification for this email or callsign
-    const existingVerification = db.prepare(
-      'SELECT * FROM user_verifications WHERE (email = ? OR callsign = ?) AND is_verified = 0 AND expires_at > ?'
-    ).get(email, normalizedCallsign, Math.floor(Date.now() / 1000));
+    const result_existingVerification = await pool.query(
+      'SELECT * FROM user_verifications WHERE (email = $1 OR callsign = $2) AND is_verified = FALSE AND expires_at > $3',
+      [email, normalizedCallsign, Math.floor(Date.now() / 1000)]
+    );
+    const existingVerification = result_existingVerification.rows[0] || null;
 
     if (existingVerification) {
       // Resend verification email
@@ -446,11 +449,8 @@ router.post('/register', async (req, res) => {
     const expiresAt = Math.floor(Date.now() / 1000) + 24 * 60 * 60; // 24 hours
 
     // Insert verification record
-    const stmt = db.prepare(`
-      INSERT INTO user_verifications (callsign, name, email, password_hash, verification_token, expires_at, locale)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-    stmt.run(normalizedCallsign, name, email, passwordHash, verificationToken, expiresAt, locale);
+    await pool.query(`INSERT INTO user_verifications (callsign, name, email, password_hash, verification_token, expires_at, locale)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)`, [normalizedCallsign, name, email, passwordHash, verificationToken, expiresAt, locale]);
 
     // Send verification email
     const emailSent = await sendVerificationEmail(email, name, verificationToken, locale, 'user');
@@ -566,7 +566,8 @@ router.get('/verify', async (req, res) => {
     }
 
     // Find verification record
-    const verification = db.prepare('SELECT * FROM user_verifications WHERE verification_token = ?').get(token);
+    const result_verification = await pool.query(`SELECT * FROM user_verifications WHERE verification_token = $1`, [token]);
+    const verification = result_verification.rows[0] || null;
 
     if (!verification) {
       return res.status(400).send(`
@@ -744,15 +745,11 @@ router.get('/verify', async (req, res) => {
     }
 
     // Create user account
-    const insertStmt = db.prepare(`
-      INSERT INTO users (callsign, name, email, password_hash, is_active, locale)
-      VALUES (?, ?, ?, ?, 1, ?)
-    `);
-    insertStmt.run(verification.callsign, verification.name, verification.email, verification.password_hash, verification.locale);
+    await pool.query(`INSERT INTO users (callsign, name, email, password_hash, is_active, locale)
+      VALUES ($1, $2, $3, $4, 1, $5)`, [verification.callsign, verification.name, verification.email, verification.password_hash, verification.locale]);
 
     // Mark verification as complete
-    const updateStmt = db.prepare('UPDATE user_verifications SET is_verified = 1 WHERE id = ?');
-    updateStmt.run(verification.id);
+    await pool.query(`UPDATE user_verifications SET is_verified = TRUE WHERE id = $1`, [verification.id]);
 
     res.send(`
 <!DOCTYPE html>
@@ -818,7 +815,7 @@ router.get('/verify', async (req, res) => {
 /**
  * User login form
  */
-router.get('/login', (req, res) => {
+router.get('/login', async (req, res) => {
   const locale = res.locals.locale || 'en';
   const __ = req.__;
   
@@ -1108,7 +1105,8 @@ router.post('/login', async (req, res) => {
     const normalizedCallsign = callsign.trim().toUpperCase();
 
     // Find user
-    const user = db.prepare('SELECT * FROM users WHERE callsign = ?').get(normalizedCallsign);
+    const result_user = await pool.query(`SELECT * FROM users WHERE callsign = $1`, [normalizedCallsign]);
+    const user = result_user.rows[0] || null;
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid callsign or password' });
@@ -1130,15 +1128,11 @@ router.post('/login', async (req, res) => {
     const sessionToken = uuidv4();
     const expiresAt = Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60); // 30 days
 
-    const stmt = db.prepare(`
-      INSERT INTO user_sessions (session_token, user_id, expires_at)
-      VALUES (?, ?, ?)
-    `);
-    stmt.run(sessionToken, user.id, expiresAt);
+    await pool.query(`INSERT INTO user_sessions (session_token, user_id, expires_at)
+      VALUES ($1, $2, $3)`, [sessionToken, user.id, expiresAt]);
 
     // Update last login time
-    const updateStmt = db.prepare('UPDATE users SET last_login_at = ? WHERE id = ?');
-    updateStmt.run(Math.floor(Date.now() / 1000), user.id);
+    await pool.query('UPDATE users SET last_login_at = $1 WHERE id = $2', [Math.floor(Date.now() / 1000), user.id]);
 
     // Set session cookie
     res.cookie('session_token', sessionToken, {
@@ -1184,14 +1178,13 @@ router.post('/login', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.post('/logout', (req, res) => {
+router.post('/logout', async (req, res) => {
   try {
     const sessionToken = req.cookies.session_token;
 
     if (sessionToken) {
       // Delete session from database
-      const stmt = db.prepare('DELETE FROM user_sessions WHERE session_token = ?');
-      stmt.run(sessionToken);
+      await pool.query(`DELETE FROM user_sessions WHERE session_token = $1`, [sessionToken]);
     }
 
     // Clear session cookie
@@ -1207,7 +1200,7 @@ router.post('/logout', (req, res) => {
 /**
  * Forgot password form
  */
-router.get('/forgot-password', (req, res) => {
+router.get('/forgot-password', async (req, res) => {
   const locale = res.locals.locale || 'en';
   const __ = req.__;
   
@@ -1370,7 +1363,8 @@ router.post('/forgot-password', async (req, res) => {
     const normalizedCallsign = callsign.trim().toUpperCase();
 
     // Find user with matching callsign and email
-    const user = db.prepare('SELECT * FROM users WHERE callsign = ? AND email = ?').get(normalizedCallsign, email);
+    const result_user = await pool.query(`SELECT * FROM users WHERE callsign = $1 AND email = $2`, [normalizedCallsign, email]);
+    const user = result_user.rows[0] || null;
 
     if (!user) {
       // Don't reveal if user exists or not for security
@@ -1378,9 +1372,11 @@ router.post('/forgot-password', async (req, res) => {
     }
 
     // Check for existing valid token
-    const existingToken = db.prepare(
-      'SELECT * FROM password_reset_tokens WHERE user_id = ? AND is_used = 0 AND expires_at > ?'
-    ).get(user.id, Math.floor(Date.now() / 1000));
+    const result_existingToken = await pool.query(
+      'SELECT * FROM password_reset_tokens WHERE user_id = $1 AND is_used = FALSE AND expires_at > $2',
+      [user.id, Math.floor(Date.now() / 1000)]
+    );
+    const existingToken = result_existingToken.rows[0] || null;
 
     let resetToken;
     if (existingToken) {
@@ -1390,11 +1386,8 @@ router.post('/forgot-password', async (req, res) => {
       resetToken = uuidv4();
       const expiresAt = Math.floor(Date.now() / 1000) + (48 * 60 * 60); // 48 hours
 
-      const stmt = db.prepare(`
-        INSERT INTO password_reset_tokens (user_id, reset_token, expires_at)
-        VALUES (?, ?, ?)
-      `);
-      stmt.run(user.id, resetToken, expiresAt);
+      await pool.query(`INSERT INTO password_reset_tokens (user_id, reset_token, expires_at)
+        VALUES ($1, $2, $3)`, [user.id, resetToken, expiresAt]);
     }
 
     // Send reset email
@@ -1414,7 +1407,7 @@ router.post('/forgot-password', async (req, res) => {
 /**
  * Reset password form
  */
-router.get('/reset-password', (req, res) => {
+router.get('/reset-password', async (req, res) => {
   const { token } = req.query;
   const locale = res.locals.locale || 'en';
   const __ = req.__;
@@ -1603,9 +1596,11 @@ router.post('/reset-password', async (req, res) => {
     }
 
     // Find valid reset token
-    const resetToken = db.prepare(
-      'SELECT * FROM password_reset_tokens WHERE reset_token = ? AND is_used = 0 AND expires_at > ?'
-    ).get(token, Math.floor(Date.now() / 1000));
+    const result_resetToken = await pool.query(
+      'SELECT * FROM password_reset_tokens WHERE reset_token = $1 AND is_used = FALSE AND expires_at > $2',
+      [token, Math.floor(Date.now() / 1000)]
+    );
+    const resetToken = result_resetToken.rows[0] || null;
 
     if (!resetToken) {
       return res.status(400).json({ error: 'Invalid or expired reset token' });
@@ -1615,12 +1610,10 @@ router.post('/reset-password', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
 
     // Update user password
-    const updateStmt = db.prepare('UPDATE users SET password_hash = ? WHERE id = ?');
-    updateStmt.run(passwordHash, resetToken.user_id);
+    await pool.query(`UPDATE users SET password_hash = $1 WHERE id = $2`, [passwordHash, resetToken.user_id]);
 
     // Mark token as used
-    const markUsedStmt = db.prepare('UPDATE password_reset_tokens SET is_used = 1 WHERE id = ?');
-    markUsedStmt.run(resetToken.id);
+    await pool.query(`UPDATE password_reset_tokens SET is_used = TRUE WHERE id = $1`, [resetToken.id]);
 
     res.json({ message: 'Password reset successfully. You can now login with your new password.' });
   } catch (error) {
@@ -1887,7 +1880,8 @@ router.post('/change-password', authenticateUser, async (req, res) => {
     }
 
     // Get user
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+    const result_user = await pool.query(`SELECT * FROM users WHERE id = $1`, [userId]);
+    const user = result_user.rows[0] || null;
     
     // Verify current password
     const passwordMatch = await bcrypt.compare(currentPassword, user.password_hash);
@@ -1899,8 +1893,7 @@ router.post('/change-password', authenticateUser, async (req, res) => {
     const newPasswordHash = await bcrypt.hash(newPassword, 10);
 
     // Update password
-    const stmt = db.prepare('UPDATE users SET password_hash = ? WHERE id = ?');
-    stmt.run(newPasswordHash, userId);
+    await pool.query(`UPDATE users SET password_hash = $1 WHERE id = $2`, [newPasswordHash, userId]);
 
     res.json({ message: 'Password updated successfully' });
   } catch (error) {
@@ -1930,7 +1923,8 @@ router.post('/change-email', authenticateUser, async (req, res) => {
     }
 
     // Get user
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+    const result_user = await pool.query(`SELECT * FROM users WHERE id = $1`, [userId]);
+    const user = result_user.rows[0] || null;
     
     // Verify password
     const passwordMatch = await bcrypt.compare(password, user.password_hash);
@@ -1944,7 +1938,8 @@ router.post('/change-email', authenticateUser, async (req, res) => {
     }
 
     // Check if new email is already in use
-    const existingUser = db.prepare('SELECT * FROM users WHERE email = ? AND id != ?').get(newEmail, userId);
+    const result_existingUser = await pool.query(`SELECT * FROM users WHERE email = $1 AND id != $2`, [newEmail, userId]);
+    const existingUser = result_existingUser.rows[0] || null;
     if (existingUser) {
       return res.status(400).json({ error: 'Email address is already in use' });
     }
@@ -1954,14 +1949,11 @@ router.post('/change-email', authenticateUser, async (req, res) => {
     const expiresAt = Math.floor(Date.now() / 1000) + (24 * 60 * 60); // 24 hours
 
     // Delete any existing email change tokens for this user
-    db.prepare('DELETE FROM email_change_tokens WHERE user_id = ?').run(userId);
+    await pool.query(`DELETE FROM email_change_tokens WHERE user_id = $1`, [userId]);
 
     // Insert new email change token
-    const stmt = db.prepare(`
-      INSERT INTO email_change_tokens (user_id, old_email, new_email, old_email_token, expires_at)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-    stmt.run(userId, user.email, newEmail, oldEmailToken, expiresAt);
+    await pool.query(`INSERT INTO email_change_tokens (user_id, old_email, new_email, old_email_token, expires_at)
+      VALUES ($1, $2, $3, $4, $5)`, [userId, user.email, newEmail, oldEmailToken, expiresAt]);
 
     // Send verification email to old email address
     const emailSent = await sendEmailChangeVerificationEmail(user.email, user.name, oldEmailToken, true, user.locale || locale);
@@ -1991,9 +1983,11 @@ router.get('/verify-email-change', async (req, res) => {
     }
 
     // Find token in old_email_token column
-    const emailChange = db.prepare(
-      'SELECT * FROM email_change_tokens WHERE old_email_token = ? AND expires_at > ?'
-    ).get(token, Math.floor(Date.now() / 1000));
+    const result_emailChange = await pool.query(
+      'SELECT * FROM email_change_tokens WHERE old_email_token = $1 AND expires_at > $2',
+      [token, Math.floor(Date.now() / 1000)]
+    );
+    const emailChange = result_emailChange.rows[0] || null;
 
     if (emailChange) {
       // This is verification of old email
@@ -2054,15 +2048,13 @@ router.get('/verify-email-change', async (req, res) => {
 
       // Mark old email as verified and generate token for new email
       const newEmailToken = uuidv4();
-      const updateStmt = db.prepare(`
-        UPDATE email_change_tokens 
-        SET old_email_verified = 1, new_email_token = ?
-        WHERE id = ?
-      `);
-      updateStmt.run(newEmailToken, emailChange.id);
+      await pool.query(`UPDATE email_change_tokens 
+        SET old_email_verified = 1, new_email_token = $1
+        WHERE id = $2`, [newEmailToken, emailChange.id]);
 
       // Get user details
-      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(emailChange.user_id);
+      const result_user = await pool.query(`SELECT * FROM users WHERE id = $1`, [emailChange.user_id]);
+    const user = result_user.rows[0] || null;
 
       // Send verification email to new email address
       const { sendEmailChangeVerificationEmail } = require('../services/emailService');
@@ -2124,9 +2116,11 @@ router.get('/verify-email-change', async (req, res) => {
     }
 
     // Find token in new_email_token column
-    const emailChangeNew = db.prepare(
-      'SELECT * FROM email_change_tokens WHERE new_email_token = ? AND old_email_verified = 1 AND expires_at > ?'
-    ).get(token, Math.floor(Date.now() / 1000));
+    const result_emailChangeNew = await pool.query(
+      'SELECT * FROM email_change_tokens WHERE new_email_token = $1 AND old_email_verified = TRUE AND expires_at > $2',
+      [token, Math.floor(Date.now() / 1000)]
+    );
+    const emailChangeNew = result_emailChangeNew.rows[0] || null;
 
     if (emailChangeNew) {
       if (emailChangeNew.new_email_verified) {
@@ -2185,11 +2179,9 @@ router.get('/verify-email-change', async (req, res) => {
       }
 
       // Mark new email as verified and update user's email
-      const updateUserStmt = db.prepare('UPDATE users SET email = ? WHERE id = ?');
-      updateUserStmt.run(emailChangeNew.new_email, emailChangeNew.user_id);
+      await pool.query(`UPDATE users SET email = $1 WHERE id = $2`, [emailChangeNew.new_email, emailChangeNew.user_id]);
 
-      const updateTokenStmt = db.prepare('UPDATE email_change_tokens SET new_email_verified = 1 WHERE id = ?');
-      updateTokenStmt.run(emailChangeNew.id);
+      await pool.query(`UPDATE email_change_tokens SET new_email_verified = 1 WHERE id = $1`, [emailChangeNew.id]);
 
       return res.send(`
 <!DOCTYPE html>

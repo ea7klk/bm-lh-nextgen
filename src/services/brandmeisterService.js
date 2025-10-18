@@ -1,5 +1,5 @@
 const { io } = require('socket.io-client');
-const { db } = require('../db/database');
+const { pool } = require('../db/database');
 
 let socket = null;
 
@@ -31,7 +31,7 @@ function startBrandmeisterService() {
     console.error('Brandmeister websocket error:', error);
   });
 
-  socket.on('mqtt', (data) => {
+  socket.on('mqtt', async (data) => {
     try {
       const msg = JSON.parse(data.payload);
 
@@ -52,15 +52,13 @@ function startBrandmeisterService() {
       if (isSessionStop && hasGroupVoiceCall && sourceOk && destOk && duration > 5 && destinationId !== 9) {
         // Insert into database
         try {
-          const stmt = db.prepare(`
+          await pool.query(`
             INSERT INTO lastheard (
-              SourceID, DestinationID, SourceCall, SourceName, 
-              DestinationCall, DestinationName, Start, Stop, 
-              TalkerAlias, duration
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `);
-
-          stmt.run(
+              "SourceID", "DestinationID", "SourceCall", "SourceName", 
+              "DestinationCall", "DestinationName", "Start", "Stop", 
+              "TalkerAlias", duration
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          `, [
             msg.SourceID || null,
             msg.DestinationID || null,
             msg.SourceCall.trim(),
@@ -71,7 +69,7 @@ function startBrandmeisterService() {
             stop,
             msg.TalkerAlias || null,
             duration
-          );
+          ]);
 
           console.log(`Inserted: ${msg.SourceCall.trim()} → ${msg.DestinationName.trim()} (${duration}s)`);
         } catch (dbError) {

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { db } = require('../db/database');
+const { pool } = require('../db/database');
 const { authenticateAdmin } = require('../middleware/adminAuth');
 
 // Apply admin authentication to all routes
@@ -17,9 +17,90 @@ router.use(authenticateAdmin);
  */
 
 /**
+ * Get database statistics (Admin only)
+ */
+router.get('/stats', async (req, res) => {
+  try {
+    const totalRecords = await pool.query('SELECT COUNT(*) as count FROM lastheard WHERE "DestinationID" != 9');
+    const uniqueTalkgroups = await pool.query('SELECT COUNT(DISTINCT "DestinationID") as count FROM lastheard WHERE "DestinationID" != 9');
+    const uniqueCallsigns = await pool.query('SELECT COUNT(DISTINCT "SourceCall") as count FROM lastheard WHERE "DestinationID" != 9');
+    
+    res.json({
+      totalRecords: parseInt(totalRecords.rows[0].count),
+      uniqueTalkgroups: parseInt(uniqueTalkgroups.rows[0].count),
+      uniqueCallsigns: parseInt(uniqueCallsigns.rows[0].count)
+    });
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    res.status(500).json({ error: 'Failed to fetch statistics' });
+  }
+});
+
+/**
+ * Expunge old records (Admin only)
+ */
+router.post('/expunge', async (req, res) => {
+  try {
+    const sevenDaysAgo = Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60);
+    const result = await pool.query('DELETE FROM lastheard WHERE "Start" < $1', [sevenDaysAgo]);
+    
+    res.json({
+      message: 'Records expunged successfully',
+      deletedCount: result.rowCount
+    });
+  } catch (error) {
+    console.error('Error expunging records:', error);
+    res.status(500).json({ error: 'Failed to expunge records' });
+  }
+});
+
+/**
+ * Get user by ID for editing (Admin only)
+ */
+router.get('/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query('SELECT id, callsign, name, email, is_active, created_at, last_login_at, locale FROM users WHERE id = $1', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
+/**
+ * Update user data (Admin only)
+ */
+router.put('/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, is_active, locale } = req.body;
+    
+    const result = await pool.query(
+      'UPDATE users SET name = $1, email = $2, is_active = $3, locale = $4 WHERE id = $5',
+      [name, email, is_active, locale || 'en', id]
+    );
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({ message: 'User updated successfully' });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
+/**
  * Admin home page - HTML interface
  */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   res.send(`
 <!DOCTYPE html>
 <html lang="en">
@@ -196,6 +277,119 @@ router.get('/', (req, res) => {
             font-size: 28px;
             font-weight: 600;
         }
+        .clickable-callsign {
+            color: #667eea;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .clickable-callsign:hover {
+            text-decoration: underline;
+        }
+        .expunge-btn {
+            padding: 12px 24px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .expunge-btn:hover {
+            background: #c82333;
+        }
+        .expunge-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-header h2 {
+            margin: 0;
+        }
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .close:hover {
+            color: #000;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 600;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        .btn-primary {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        .btn-secondary {
+            padding: 10px 20px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
     </style>
 </head>
 <body>
@@ -208,8 +402,26 @@ router.get('/', (req, res) => {
         <div id="message" class="message"></div>
 
         <div class="section">
+            <h2>📊 Database Statistics</h2>
+            <div class="stats" id="dbStats">
+                <div class="stat-card">
+                    <div class="stat-label">Total Lastheard Records</div>
+                    <div class="stat-value" id="totalRecords">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Unique Talkgroups</div>
+                    <div class="stat-value" id="uniqueTalkgroups">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Unique Callsigns</div>
+                    <div class="stat-value" id="uniqueCallsigns">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
             <h2>
-                Users
+                👥 Users
                 <button class="refresh-btn" onclick="loadUsers()">🔄 Refresh</button>
             </h2>
             <div class="stats" id="userStats">
@@ -229,7 +441,62 @@ router.get('/', (req, res) => {
             <div id="usersContent" class="loading">Loading...</div>
         </div>
 
+        <div class="section">
+            <h2>🗑️ Database Maintenance</h2>
+            <p style="color: #666; margin-bottom: 20px;">
+                Remove records older than 7 days from the database to free up space and improve performance.
+            </p>
+            <button class="expunge-btn" onclick="expungeOldRecords()" id="expungeBtn">
+                Expunge Records Older Than 7 Days
+            </button>
+        </div>
+
         <a href="/" class="back-link">← Back to Home</a>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit User</h2>
+                <span class="close" onclick="closeEditModal()">&times;</span>
+            </div>
+            <form id="editUserForm">
+                <input type="hidden" id="editUserId">
+                <div class="form-group">
+                    <label>Callsign</label>
+                    <input type="text" id="editCallsign" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="editName" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="editEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="editStatus">
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Language</label>
+                    <select id="editLocale">
+                        <option value="en">English</option>
+                        <option value="es">Español</option>
+                        <option value="de">Deutsch</option>
+                        <option value="fr">Français</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script>
@@ -276,6 +543,20 @@ router.get('/', (req, res) => {
             return text.replace(/[&<>"']/g, m => map[m]);
         }
 
+        async function loadStats() {
+            try {
+                const response = await fetch('/admin/stats');
+                if (!response.ok) throw new Error('Failed to load stats');
+                
+                const data = await response.json();
+                document.getElementById('totalRecords').textContent = data.totalRecords.toLocaleString();
+                document.getElementById('uniqueTalkgroups').textContent = data.uniqueTalkgroups.toLocaleString();
+                document.getElementById('uniqueCallsigns').textContent = data.uniqueCallsigns.toLocaleString();
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
         async function loadUsers() {
             try {
                 const response = await fetch('/admin/users');
@@ -308,7 +589,7 @@ router.get('/', (req, res) => {
                 
                 data.forEach(user => {
                     html += '<tr>';
-                    html += '<td><code>' + escapeHtml(user.callsign) + '</code></td>';
+                    html += '<td><a href="#" class="clickable-callsign" onclick="editUser(' + user.id + '); return false;"><code>' + escapeHtml(user.callsign) + '</code></a></td>';
                     html += '<td>' + escapeHtml(user.name) + '</td>';
                     html += '<td>' + escapeHtml(user.email) + '</td>';
                     html += '<td><span class="status-' + (user.is_active ? 'active' : 'inactive') + '">' + (user.is_active ? 'Active' : 'Inactive') + '</span></td>';
@@ -330,6 +611,96 @@ router.get('/', (req, res) => {
             } catch (error) {
                 console.error('Error loading users:', error);
                 document.getElementById('usersContent').innerHTML = '<div class="error">Error loading users</div>';
+            }
+        }
+
+        async function editUser(id) {
+            try {
+                const response = await fetch('/admin/users/' + id);
+                if (!response.ok) throw new Error('Failed to load user');
+                
+                const user = await response.json();
+                
+                document.getElementById('editUserId').value = user.id;
+                document.getElementById('editCallsign').value = user.callsign;
+                document.getElementById('editName').value = user.name;
+                document.getElementById('editEmail').value = user.email;
+                document.getElementById('editStatus').value = user.is_active ? 'true' : 'false';
+                document.getElementById('editLocale').value = user.locale || 'en';
+                
+                document.getElementById('editUserModal').style.display = 'block';
+            } catch (error) {
+                console.error('Error loading user:', error);
+                showMessage('Failed to load user data', 'error');
+            }
+        }
+
+        function closeEditModal() {
+            document.getElementById('editUserModal').style.display = 'none';
+        }
+
+        document.getElementById('editUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const id = document.getElementById('editUserId').value;
+            const name = document.getElementById('editName').value;
+            const email = document.getElementById('editEmail').value;
+            const is_active = document.getElementById('editStatus').value === 'true';
+            const locale = document.getElementById('editLocale').value;
+            
+            try {
+                const response = await fetch('/admin/users/' + id, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, email, is_active, locale })
+                });
+                
+                if (!response.ok) throw new Error('Failed to update user');
+                
+                showMessage('User updated successfully', 'success');
+                closeEditModal();
+                loadUsers();
+            } catch (error) {
+                console.error('Error updating user:', error);
+                showMessage('Failed to update user', 'error');
+            }
+        });
+
+        async function expungeOldRecords() {
+            if (!confirm('Are you sure you want to delete all records older than 7 days? This action cannot be undone.')) {
+                return;
+            }
+            
+            const btn = document.getElementById('expungeBtn');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+            
+            try {
+                const response = await fetch('/admin/expunge', {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) throw new Error('Failed to expunge records');
+                
+                const data = await response.json();
+                showMessage('Successfully deleted ' + data.deletedCount.toLocaleString() + ' old records', 'success');
+                loadStats(); // Reload stats
+            } catch (error) {
+                console.error('Error expunging records:', error);
+                showMessage('Failed to expunge records', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Expunge Records Older Than 7 Days';
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('editUserModal');
+            if (event.target == modal) {
+                closeEditModal();
             }
         }
 
@@ -375,6 +746,7 @@ router.get('/', (req, res) => {
         }
 
         // Load data on page load
+        loadStats();
         loadUsers();
     </script>
 </body>
@@ -406,11 +778,10 @@ router.get('/', (req, res) => {
  *       500:
  *         description: Server error
  */
-router.get('/users', (req, res) => {
+router.get('/users', async (req, res) => {
   try {
-    const stmt = db.prepare('SELECT id, callsign, name, email, is_active, created_at, last_login_at, locale FROM users ORDER BY created_at DESC');
-    const users = stmt.all();
-    res.json(users);
+    const result = await pool.query('SELECT id, callsign, name, email, is_active, created_at, last_login_at, locale FROM users ORDER BY created_at DESC');
+    res.json(result.rows);
   } catch (error) {
     console.error('Error fetching users:', error);
     res.status(500).json({ error: 'Failed to fetch users' });
@@ -468,7 +839,7 @@ router.get('/users', (req, res) => {
  *       500:
  *         description: Server error
  */
-router.put('/users/:id/status', (req, res) => {
+router.put('/users/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
     const { is_active } = req.body;
@@ -477,10 +848,9 @@ router.put('/users/:id/status', (req, res) => {
       return res.status(400).json({ error: 'is_active field is required' });
     }
     
-    const stmt = db.prepare('UPDATE users SET is_active = ? WHERE id = ?');
-    const result = stmt.run(is_active ? 1 : 0, id);
+    const result = await pool.query('UPDATE users SET is_active = $1 WHERE id = $2', [is_active, id]);
     
-    if (result.changes === 0) {
+    if (result.rowCount === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
     
@@ -527,19 +897,17 @@ router.put('/users/:id/status', (req, res) => {
  *       500:
  *         description: Server error
  */
-router.delete('/users/:id', (req, res) => {
+router.delete('/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
     // Delete user sessions first (cascading delete)
-    const deleteSessionsStmt = db.prepare('DELETE FROM user_sessions WHERE user_id = ?');
-    deleteSessionsStmt.run(id);
+    await pool.query(`DELETE FROM user_sessions WHERE user_id = $1`, [id]);
     
     // Delete user
-    const stmt = db.prepare('DELETE FROM users WHERE id = ?');
-    const result = stmt.run(id);
+    const result = await pool.query('DELETE FROM users WHERE id = $1', [id]);
     
-    if (result.changes === 0) {
+    if (result.rowCount === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
     

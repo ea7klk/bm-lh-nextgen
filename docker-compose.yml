@@ -1,11 +1,27 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=${DB_USER:-bm_user}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-changeme}
+      - POSTGRES_DB=${DB_NAME:-bm_lastheard}
+    volumes:
+      # Mount database directory for PostgreSQL data persistence
+      - ./db:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-bm_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   bm-lh-nextgen:
     build: .
     ports:
       - "${PORT:-3000}:3000"
-    volumes:
-      # Mount data directory for database persistence
-      - ./data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
     env_file:
       # Load environment variables from .env file
       - .env
@@ -14,6 +30,12 @@ services:
       # Server Configuration
       - PORT=${PORT:-3000}
       - BASE_URL=${BASE_URL:-http://localhost:3000}
+      # Database Configuration
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USER=${DB_USER:-bm_user}
+      - DB_PASSWORD=${DB_PASSWORD:-changeme}
+      - DB_NAME=${DB_NAME:-bm_lastheard}
       # Email Configuration
       - EMAIL_HOST=${EMAIL_HOST}
       - EMAIL_PORT=${EMAIL_PORT:-587}

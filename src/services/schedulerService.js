@@ -1,20 +1,18 @@
-const { db } = require('../db/database');
+const { pool } = require('../db/database');
 const { updateTalkgroups } = require('./talkgroupsService');
 
 // Clean up lastheard records older than 7 days
-function cleanupOldRecords() {
+async function cleanupOldRecords() {
   const sevenDaysAgo = Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60);
   
   try {
-    const deleteStmt = db.prepare(`
+    const result = await pool.query(`
       DELETE FROM lastheard 
-      WHERE Start < ?
-    `);
+      WHERE "Start" < $1
+    `, [sevenDaysAgo]);
     
-    const result = deleteStmt.run(sevenDaysAgo);
-    
-    if (result.changes > 0) {
-      console.log(`Cleaned up ${result.changes} lastheard records older than 7 days`);
+    if (result.rowCount > 0) {
+      console.log(`Cleaned up ${result.rowCount} lastheard records older than 7 days`);
     }
   } catch (error) {
     console.error('Error cleaning up old records:', error);
@@ -22,30 +20,28 @@ function cleanupOldRecords() {
 }
 
 // Clean up expired password reset tokens and email change tokens
-function cleanupExpiredTokens() {
+async function cleanupExpiredTokens() {
   const currentTime = Math.floor(Date.now() / 1000);
   
   try {
     // Delete expired password reset tokens
-    const deleteResetTokensStmt = db.prepare(`
+    const resetResult = await pool.query(`
       DELETE FROM password_reset_tokens 
-      WHERE expires_at < ?
-    `);
-    const resetResult = deleteResetTokensStmt.run(currentTime);
+      WHERE expires_at < $1
+    `, [currentTime]);
     
-    if (resetResult.changes > 0) {
-      console.log(`Cleaned up ${resetResult.changes} expired password reset tokens`);
+    if (resetResult.rowCount > 0) {
+      console.log(`Cleaned up ${resetResult.rowCount} expired password reset tokens`);
     }
 
     // Delete expired email change tokens
-    const deleteEmailTokensStmt = db.prepare(`
+    const emailResult = await pool.query(`
       DELETE FROM email_change_tokens 
-      WHERE expires_at < ?
-    `);
-    const emailResult = deleteEmailTokensStmt.run(currentTime);
+      WHERE expires_at < $1
+    `, [currentTime]);
     
-    if (emailResult.changes > 0) {
-      console.log(`Cleaned up ${emailResult.changes} expired email change tokens`);
+    if (emailResult.rowCount > 0) {
+      console.log(`Cleaned up ${emailResult.rowCount} expired email change tokens`);
     }
   } catch (error) {
     console.error('Error cleaning up expired tokens:', error);
@@ -56,10 +52,10 @@ function cleanupExpiredTokens() {
 async function initializeTalkgroups() {
   try {
     // Check if talkgroups table has any data
-    const countStmt = db.prepare('SELECT COUNT(*) as count FROM talkgroups');
-    const result = countStmt.get();
+    const result = await pool.query('SELECT COUNT(*) as count FROM talkgroups');
+    const count = parseInt(result.rows[0].count);
     
-    if (result.count === 0) {
+    if (count === 0) {
       console.log('Talkgroups table is empty. Populating now...');
       const updateResult = await updateTalkgroups();
       
@@ -69,7 +65,7 @@ async function initializeTalkgroups() {
         console.error('Failed to populate talkgroups on startup:', updateResult.error);
       }
     } else {
-      console.log(`Talkgroups table already contains ${result.count} records. Skipping initial population.`);
+      console.log(`Talkgroups table already contains ${count} records. Skipping initial population.`);
     }
   } catch (error) {
     console.error('Error checking talkgroups table:', error);
@@ -81,8 +77,8 @@ async function startScheduler() {
   console.log('Starting scheduler...');
   
   // Run immediately on startup
-  cleanupOldRecords();
-  cleanupExpiredTokens();
+  await cleanupOldRecords();
+  await cleanupExpiredTokens();
   
   // Check if talkgroups table is empty and populate if needed
   await initializeTalkgroups();
@@ -91,9 +87,9 @@ async function startScheduler() {
   scheduleAt2AM();
   
   // Run every 24 hours (86400000 milliseconds)
-  setInterval(() => {
-    cleanupOldRecords();
-    cleanupExpiredTokens();
+  setInterval(async () => {
+    await cleanupOldRecords();
+    await cleanupExpiredTokens();
   }, 24 * 60 * 60 * 1000);
   
   console.log('Scheduler started - checking every 24 hours');

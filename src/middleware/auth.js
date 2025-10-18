@@ -1,6 +1,6 @@
-const { db } = require('../db/database');
+const { pool } = require('../db/database');
 
-function authenticateApiKey(req, res, next) {
+async function authenticateApiKey(req, res, next) {
   const apiKey = req.headers['x-api-key'];
 
   if (!apiKey) {
@@ -11,8 +11,8 @@ function authenticateApiKey(req, res, next) {
   }
 
   try {
-    const stmt = db.prepare('SELECT * FROM api_keys WHERE api_key = ? AND is_active = 1');
-    const keyRecord = stmt.get(apiKey);
+    const result = await pool.query('SELECT * FROM api_keys WHERE api_key = $1 AND is_active = TRUE', [apiKey]);
+    const keyRecord = result.rows[0];
 
     if (!keyRecord) {
       return res.status(403).json({ 
@@ -25,8 +25,7 @@ function authenticateApiKey(req, res, next) {
     const currentTime = Math.floor(Date.now() / 1000);
     if (keyRecord.expires_at && keyRecord.expires_at < currentTime) {
       // Deactivate the expired key
-      const deactivateStmt = db.prepare('UPDATE api_keys SET is_active = 0 WHERE id = ?');
-      deactivateStmt.run(keyRecord.id);
+      await pool.query('UPDATE api_keys SET is_active = FALSE WHERE id = $1', [keyRecord.id]);
       
       return res.status(403).json({ 
         error: 'API key has expired',
@@ -35,8 +34,7 @@ function authenticateApiKey(req, res, next) {
     }
 
     // Update last_used_at timestamp
-    const updateLastUsedStmt = db.prepare('UPDATE api_keys SET last_used_at = ? WHERE id = ?');
-    updateLastUsedStmt.run(currentTime, keyRecord.id);
+    await pool.query('UPDATE api_keys SET last_used_at = $1 WHERE id = $2', [currentTime, keyRecord.id]);
 
     req.apiKeyData = keyRecord;
     next();
