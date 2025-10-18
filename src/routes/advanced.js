@@ -196,6 +196,10 @@ router.get('/', authenticateUser, (req, res) => {
         .select-search-option:last-child {
             border-bottom: none;
         }
+        .select-search-no-results {
+            color: #999;
+            cursor: default;
+        }
         .control-group .tooltip {
             width: 100%;
         }
@@ -558,6 +562,13 @@ router.get('/', authenticateUser, (req, res) => {
         let autoRefreshInterval = null;
         let talkgroupsList = [];
         let selectedTalkgroupId = '';
+        
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
 
         // Format seconds to hours:minutes:seconds
         function formatDuration(seconds) {
@@ -717,7 +728,7 @@ router.get('/', authenticateUser, (req, res) => {
                 // Show all if search is empty
                 renderTalkgroupOptions(talkgroupsList);
             } else if (filtered.length === 0) {
-                dropdown.innerHTML = '<div class="select-search-option" style="color: #999; cursor: default;">No talkgroups found</div>';
+                dropdown.innerHTML = '<div class="select-search-option select-search-no-results">No talkgroups found</div>';
                 dropdown.classList.add('active');
             } else {
                 renderTalkgroupOptions(filtered);
@@ -728,27 +739,35 @@ router.get('/', authenticateUser, (req, res) => {
         function renderTalkgroupOptions(talkgroups) {
             const dropdown = document.getElementById('talkgroupDropdown');
             
+            // Clear dropdown
+            dropdown.innerHTML = '';
+            
             // Add "All" option
-            let html = '<div class="select-search-option' + (selectedTalkgroupId === '' ? ' selected' : '') + '" data-value="" data-name="All">All</div>';
+            const allOption = document.createElement('div');
+            allOption.className = 'select-search-option' + (selectedTalkgroupId === '' ? ' selected' : '');
+            allOption.dataset.value = '';
+            allOption.dataset.name = 'All';
+            allOption.textContent = 'All';
+            allOption.addEventListener('click', function() {
+                selectTalkgroup(this.dataset.value, this.dataset.name);
+            });
+            dropdown.appendChild(allOption);
             
             // Add talkgroup options
             talkgroups.forEach(tg => {
                 const isSelected = selectedTalkgroupId === tg.talkgroup_id.toString();
-                html += '<div class="select-search-option' + (isSelected ? ' selected' : '') + '" data-value="' + tg.talkgroup_id + '" data-name="' + tg.name + '">' +
-                    tg.talkgroup_id + ' - ' + tg.name +
-                    '</div>';
-            });
-            
-            dropdown.innerHTML = html;
-            dropdown.classList.add('active');
-            
-            // Add click handlers to options
-            const options = dropdown.querySelectorAll('.select-search-option');
-            options.forEach(option => {
+                const option = document.createElement('div');
+                option.className = 'select-search-option' + (isSelected ? ' selected' : '');
+                option.dataset.value = tg.talkgroup_id;
+                option.dataset.name = tg.name;
+                option.textContent = tg.talkgroup_id + ' - ' + tg.name;
                 option.addEventListener('click', function() {
                     selectTalkgroup(this.dataset.value, this.dataset.name);
                 });
+                dropdown.appendChild(option);
             });
+            
+            dropdown.classList.add('active');
         }
         
         // Select a talkgroup
@@ -788,17 +807,10 @@ router.get('/', authenticateUser, (req, res) => {
                 filterTalkgroups(this.value);
             });
             
-            // Show all options on focus if no selection
+            // Show all options on focus
             searchInput.addEventListener('focus', function() {
                 if (talkgroupsList.length > 0) {
                     filterTalkgroups(this.value);
-                }
-            });
-            
-            // Clear on focus if "All" is selected
-            searchInput.addEventListener('focus', function() {
-                if (selectedTalkgroupId === '' && this.value === '') {
-                    filterTalkgroups('');
                 }
             });
             
