@@ -760,12 +760,11 @@ router.get('/', async (req, res) => {
             modal.style.display = 'block';
             
             // Reset content to loading state
-            document.getElementById('updateTgContent').innerHTML = `
-                <div class="loading">
-                    <p>Talkgroup update process running...</p>
-                    <p style="color: #999; margin-top: 10px;">This may take a few moments.</p>
-                </div>
-            `;
+            document.getElementById('updateTgContent').innerHTML = 
+                '<div class="loading">' +
+                    '<p>Talkgroup update process running...</p>' +
+                    '<p style="color: #999; margin-top: 10px;">This may take a few moments.</p>' +
+                '</div>';
             document.getElementById('updateTgActions').style.display = 'none';
             document.getElementById('updateTgClose').style.display = 'none';
             
@@ -784,38 +783,37 @@ router.get('/', async (req, res) => {
                 
                 // Show success results
                 if (data.success) {
-                    document.getElementById('updateTgContent').innerHTML = `
-                        <div style="padding: 20px 0;">
-                            <div class="message success" style="display: block; margin-bottom: 20px;">
-                                Talkgroup update completed successfully!
-                            </div>
-                            <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 10px;">
-                                <strong>📊 Update Statistics:</strong>
-                            </div>
-                            <table style="width: 100%; margin-top: 10px;">
-                                <tr>
-                                    <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>Read from source:</strong></td>
-                                    <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right;">${data.readFromSource.toLocaleString()}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>Added to database:</strong></td>
-                                    <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right; color: #28a745;">${data.added.toLocaleString()}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>Updated in database:</strong></td>
-                                    <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right; color: #667eea;">${data.updated.toLocaleString()}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>Total before update:</strong></td>
-                                    <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right;">${data.totalBefore.toLocaleString()}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 10px;"><strong>Total after update:</strong></td>
-                                    <td style="padding: 10px; text-align: right; font-weight: 600;">${data.totalAfter.toLocaleString()}</td>
-                                </tr>
-                            </table>
-                        </div>
-                    `;
+                    document.getElementById('updateTgContent').innerHTML = 
+                        '<div style="padding: 20px 0;">' +
+                            '<div class="message success" style="display: block; margin-bottom: 20px;">' +
+                                'Talkgroup update completed successfully!' +
+                            '</div>' +
+                            '<div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 10px;">' +
+                                '<strong>📊 Update Statistics:</strong>' +
+                            '</div>' +
+                            '<table style="width: 100%; margin-top: 10px;">' +
+                                '<tr>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>Read from source:</strong></td>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right;">' + data.readFromSource.toLocaleString() + '</td>' +
+                                '</tr>' +
+                                '<tr>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>Added to database:</strong></td>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right; color: #28a745;">' + data.added.toLocaleString() + '</td>' +
+                                '</tr>' +
+                                '<tr>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>Updated in database:</strong></td>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right; color: #667eea;">' + data.updated.toLocaleString() + '</td>' +
+                                '</tr>' +
+                                '<tr>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>Total before update:</strong></td>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right;">' + data.totalBefore.toLocaleString() + '</td>' +
+                                '</tr>' +
+                                '<tr>' +
+                                    '<td style="padding: 10px;"><strong>Total after update:</strong></td>' +
+                                    '<td style="padding: 10px; text-align: right; font-weight: 600;">' + data.totalAfter.toLocaleString() + '</td>' +
+                                '</tr>' +
+                            '</table>' +
+                        '</div>';
                     document.getElementById('updateTgActions').style.display = 'flex';
                     document.getElementById('updateTgClose').style.display = 'block';
                     showMessage('Talkgroups updated successfully', 'success');
@@ -824,11 +822,10 @@ router.get('/', async (req, res) => {
                 }
             } catch (error) {
                 console.error('Error updating talkgroups:', error);
-                document.getElementById('updateTgContent').innerHTML = `
-                    <div class="message error" style="display: block;">
-                        Failed to update talkgroups: ${error.message}
-                    </div>
-                `;
+                document.getElementById('updateTgContent').innerHTML = 
+                    '<div class="message error" style="display: block;">' +
+                        'Failed to update talkgroups: ' + error.message +
+                    '</div>';
                 document.getElementById('updateTgActions').style.display = 'flex';
                 document.getElementById('updateTgClose').style.display = 'block';
                 showMessage('Failed to update talkgroups', 'error');
