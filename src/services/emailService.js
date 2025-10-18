@@ -807,9 +807,7 @@ async function sendBroadcastEmail(subject, message) {
 
     // Send emails sequentially with a small delay to avoid hitting email provider rate limits
     // A 100ms delay provides a balance between speed and reliability
-    // For large user bases (>1000), consider:
-    // - Grouping users by locale to reduce locale switching overhead
-    // - Implementing a queue-based system with batch processing
+    // For large user bases (>1000), consider implementing a queue-based system
     for (let i = 0; i < users.length; i++) {
       const user = users[i];
       const locale = user.locale || 'en';
