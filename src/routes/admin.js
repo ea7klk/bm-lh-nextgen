@@ -783,6 +783,12 @@ router.get('/', async (req, res) => {
                 
                 // Show success results
                 if (data.success) {
+                    const readFromSource = (data.readFromSource || 0).toLocaleString();
+                    const added = (data.added || 0).toLocaleString();
+                    const updated = (data.updated || 0).toLocaleString();
+                    const totalBefore = (data.totalBefore || 0).toLocaleString();
+                    const totalAfter = (data.totalAfter || 0).toLocaleString();
+                    
                     document.getElementById('updateTgContent').innerHTML = 
                         '<div style="padding: 20px 0;">' +
                             '<div class="message success" style="display: block; margin-bottom: 20px;">' +
@@ -794,23 +800,23 @@ router.get('/', async (req, res) => {
                             '<table style="width: 100%; margin-top: 10px;">' +
                                 '<tr>' +
                                     '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>Read from source:</strong></td>' +
-                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right;">' + data.readFromSource.toLocaleString() + '</td>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right;">' + readFromSource + '</td>' +
                                 '</tr>' +
                                 '<tr>' +
                                     '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>Added to database:</strong></td>' +
-                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right; color: #28a745;">' + data.added.toLocaleString() + '</td>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right; color: #28a745;">' + added + '</td>' +
                                 '</tr>' +
                                 '<tr>' +
                                     '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>Updated in database:</strong></td>' +
-                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right; color: #667eea;">' + data.updated.toLocaleString() + '</td>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right; color: #667eea;">' + updated + '</td>' +
                                 '</tr>' +
                                 '<tr>' +
                                     '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>Total before update:</strong></td>' +
-                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right;">' + data.totalBefore.toLocaleString() + '</td>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right;">' + totalBefore + '</td>' +
                                 '</tr>' +
                                 '<tr>' +
                                     '<td style="padding: 10px;"><strong>Total after update:</strong></td>' +
-                                    '<td style="padding: 10px; text-align: right; font-weight: 600;">' + data.totalAfter.toLocaleString() + '</td>' +
+                                    '<td style="padding: 10px; text-align: right; font-weight: 600;">' + totalAfter + '</td>' +
                                 '</tr>' +
                             '</table>' +
                         '</div>';
