@@ -33,7 +33,7 @@ services:
       # Database Configuration
       - DB_HOST=${DB_HOST:-postgres}
       - DB_PORT=${DB_PORT:-5432}
-      - DB_USER=${DB_USER:-bm_user}
+      - DB_USER=${DB_USER:-bm_lastheard}
       - DB_PASSWORD=${DB_PASSWORD:-changeme}
       - DB_NAME=${DB_NAME:-bm_lastheard}
       # Email Configuration
