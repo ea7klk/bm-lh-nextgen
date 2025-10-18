@@ -893,15 +893,15 @@ router.get('/', async (req, res) => {
                     throw new Error(data.error || 'Failed to send broadcast email');
                 }
                 
-                let successMessage = 'Broadcast email sent successfully!\\n\\n' +
-                                   'Total Users: ' + data.totalUsers + '\\n' +
-                                   'Emails Sent: ' + data.emailsSent + '\\n' +
+                let successMessage = 'Broadcast email sent successfully!\n\n' +
+                                   'Total Users: ' + data.totalUsers + '\n' +
+                                   'Emails Sent: ' + data.emailsSent + '\n' +
                                    'Failed: ' + data.emailsFailed;
                 
                 if (data.emailsFailed > 0 && data.failedDetails) {
-                    successMessage += '\\n\\nFailed emails:\\n';
+                    successMessage += '\n\nFailed emails:\n';
                     data.failedDetails.slice(0, 5).forEach(detail => {
-                        successMessage += '- ' + detail.email + ': ' + detail.error + '\\n';
+                        successMessage += '- ' + detail.email + ': ' + detail.error + '\n';
                     });
                     if (data.failedDetails.length > 5) {
                         successMessage += '...and ' + (data.failedDetails.length - 5) + ' more';

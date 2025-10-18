@@ -794,18 +794,20 @@ async function sendBroadcastEmail(subject, message) {
   try {
     // Get all active users with verified emails
     const result = await pool.query(
-      'SELECT email, name, callsign, locale FROM users WHERE is_active = true AND email IS NOT NULL ORDER BY email'
+      'SELECT email, name, callsign, locale FROM users WHERE is_active = true AND email IS NOT NULL AND is_verified = true ORDER BY email'
     );
     
     if (result.rows.length === 0) {
-      return { success: false, error: 'No active users found' };
+      return { success: false, error: 'No active users with verified emails found' };
     }
 
     const users = result.rows;
     const emailsSent = [];
     const emailsFailed = [];
 
-    // Send email to each user
+    // Send emails sequentially to avoid hitting email provider rate limits
+    // For large user bases, consider implementing a queue-based system
+    // with configurable batch sizes and delays
     for (const user of users) {
       const locale = user.locale || 'en';
       i18n.setLocale(locale);
