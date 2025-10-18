@@ -44,12 +44,9 @@ COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 # Copy built React app from builder stage
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 
-# Copy source code
+# Copy source code (only what's needed for production)
 COPY --chown=nodejs:nodejs src ./src
 COPY --chown=nodejs:nodejs locales ./locales
-COPY --chown=nodejs:nodejs migrate-sqlite-to-postgres.js ./
-COPY --chown=nodejs:nodejs test-db-connection.js ./
-COPY --chown=nodejs:nodejs test-email.js ./
 
 # Set permissions
 RUN chown -R nodejs:nodejs /app
