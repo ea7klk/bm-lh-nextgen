@@ -47,15 +47,40 @@ jobs:
     - name: Check Docker build
       run: docker build -t bm-lh-nextgen-ci .
 
+    - name: Start PostgreSQL for Docker test
+      run: |
+        # Create a Docker network
+        docker network create ci-network
+        
+        # Start PostgreSQL container
+        docker run -d --name postgres-test \
+          --network ci-network \
+          -e POSTGRES_USER=bm_lastheard \
+          -e POSTGRES_PASSWORD=test_password \
+          -e POSTGRES_DB=bm_lastheard \
+          -p 5433:5432 \
+          postgres:16-alpine
+        
+        # Wait for PostgreSQL to be ready
+        echo "Waiting for PostgreSQL to be ready..."
+        for i in {1..30}; do
+          if docker exec postgres-test pg_isready -U bm_lastheard > /dev/null 2>&1; then
+            echo "✅ PostgreSQL is ready"
+            break
+          fi
+          echo "⏳ Waiting for PostgreSQL... ($i/30)"
+          sleep 2
+        done
+
     - name: Test Docker container
       run: |
         # Start container in background with PostgreSQL connection
         docker run -d --name bm-lh-ci-test \
+          --network ci-network \
           -p 3001:3000 \
-          --network host \
-          -e DB_HOST=localhost \
+          -e DB_HOST=postgres-test \
           -e DB_PORT=5432 \
-          -e DB_USER=bm_user \
+          -e DB_USER=bm_lastheard \
           -e DB_PASSWORD=test_password \
           -e DB_NAME=bm_lastheard \
           -e ADMIN_PASSWORD=test123 \
@@ -63,29 +88,37 @@ jobs:
           bm-lh-nextgen-ci
 
         # Wait for container to be ready
-        sleep 10
+        echo "Waiting for application to start..."
+        sleep 15
+        
+        # Check container logs
+        echo "Container logs:"
+        docker logs bm-lh-ci-test
         
         # Test health endpoint
-        for i in {1..6}; do
+        for i in {1..12}; do
           if curl -f http://localhost:3001/health > /dev/null 2>&1; then
             echo "✅ Container health check passed"
             break
           fi
-          echo "⏳ Waiting for container... ($i/6)"
+          echo "⏳ Waiting for container... ($i/12)"
           sleep 5
         done
         
         # Final health check
-        curl -f http://localhost:3001/health
+        curl -f http://localhost:3001/health || (docker logs bm-lh-ci-test && exit 1)
         
         # Test frontend
-        curl -f http://localhost:3001/ > /dev/null
+        curl -f http://localhost:3001/ > /dev/null || (docker logs bm-lh-ci-test && exit 1)
 
     - name: Cleanup
       if: always()
       run: |
         docker stop bm-lh-ci-test || true
         docker rm bm-lh-ci-test || true
+        docker stop postgres-test || true
+        docker rm postgres-test || true
+        docker network rm ci-network || true
         docker rmi bm-lh-nextgen-ci || true
 
   security-scan:
