@@ -10,6 +10,21 @@ jobs:
   test:
     runs-on: ubuntu-latest
     
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: bm_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: bm_lastheard
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -34,9 +49,15 @@ jobs:
 
     - name: Test Docker container
       run: |
-        # Start container in background
+        # Start container in background with PostgreSQL connection
         docker run -d --name bm-lh-ci-test \
           -p 3001:3000 \
+          --network host \
+          -e DB_HOST=localhost \
+          -e DB_PORT=5432 \
+          -e DB_USER=bm_user \
+          -e DB_PASSWORD=test_password \
+          -e DB_NAME=bm_lastheard \
           -e ADMIN_PASSWORD=test123 \
           -e JWT_SECRET=test-secret-for-ci \
           bm-lh-nextgen-ci
