@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../db/database');
+const { db } = require('../db/database');
 const { authenticateAdmin } = require('../middleware/adminAuth');
 
 // Apply admin authentication to all routes
@@ -19,7 +19,7 @@ router.use(authenticateAdmin);
 /**
  * Admin home page - HTML interface
  */
-router.get('/', async (req, res) => {
+router.get('/', (req, res) => {
   res.send(`
 <!DOCTYPE html>
 <html lang="en">
@@ -406,10 +406,11 @@ router.get('/', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.get('/users', async (req, res) => {
+router.get('/users', (req, res) => {
   try {
-    const result = await pool.query('SELECT id, callsign, name, email, is_active, created_at, last_login_at, locale FROM users ORDER BY created_at DESC');
-    res.json(result.rows);
+    const stmt = db.prepare('SELECT id, callsign, name, email, is_active, created_at, last_login_at, locale FROM users ORDER BY created_at DESC');
+    const users = stmt.all();
+    res.json(users);
   } catch (error) {
     console.error('Error fetching users:', error);
     res.status(500).json({ error: 'Failed to fetch users' });
@@ -467,7 +468,7 @@ router.get('/users', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.put('/users/:id/status', async (req, res) => {
+router.put('/users/:id/status', (req, res) => {
   try {
     const { id } = req.params;
     const { is_active } = req.body;
@@ -476,9 +477,10 @@ router.put('/users/:id/status', async (req, res) => {
       return res.status(400).json({ error: 'is_active field is required' });
     }
     
-    const result = await pool.query('UPDATE users SET is_active = $1 WHERE id = $2', [is_active, id]);
+    const stmt = db.prepare('UPDATE users SET is_active = ? WHERE id = ?');
+    const result = stmt.run(is_active ? 1 : 0, id);
     
-    if (result.rowCount === 0) {
+    if (result.changes === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
     
@@ -525,17 +527,19 @@ router.put('/users/:id/status', async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.delete('/users/:id', async (req, res) => {
+router.delete('/users/:id', (req, res) => {
   try {
     const { id } = req.params;
     
     // Delete user sessions first (cascading delete)
-    await pool.query(`DELETE FROM user_sessions WHERE user_id = $1`, [id]);
+    const deleteSessionsStmt = db.prepare('DELETE FROM user_sessions WHERE user_id = ?');
+    deleteSessionsStmt.run(id);
     
     // Delete user
-    const result = await pool.query('DELETE FROM users WHERE id = $1', [id]);
+    const stmt = db.prepare('DELETE FROM users WHERE id = ?');
+    const result = stmt.run(id);
     
-    if (result.rowCount === 0) {
+    if (result.changes === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
     
