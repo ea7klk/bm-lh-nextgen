@@ -865,15 +865,64 @@ router.get('/', authenticateUser, (req, res) => {
             }, 10000); // 10 seconds
         }
 
-        // Cookie utility functions
+        // Cookie utility functions for saving preferences
         function setCookie(name, value, days) {
             const expires = new Date();
             expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
             document.cookie = name + '=' + encodeURIComponent(value) + ';expires=' + expires.toUTCString() + ';path=/';
         }
 
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for(let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+            }
+            return null;
+        }
+
+        function savePreferences() {
+            const timeRangeEl = document.getElementById('timeRange');
+            const continentEl = document.getElementById('continent');
+            const countryEl = document.getElementById('country');
+            const maxEntriesEl = document.getElementById('maxEntries');
+            const talkgroupEl = document.getElementById('talkgroup');
+            const callsignSearchEl = document.getElementById('callsignSearch');
+            
+            if (timeRangeEl) setCookie('bm_adv_timeRange', timeRangeEl.value, 15);
+            if (continentEl) setCookie('bm_adv_continent', continentEl.value, 15);
+            if (countryEl) setCookie('bm_adv_country', countryEl.value, 15);
+            if (maxEntriesEl) setCookie('bm_adv_maxEntries', maxEntriesEl.value, 15);
+            if (talkgroupEl) setCookie('bm_adv_talkgroup', talkgroupEl.value, 15);
+            if (callsignSearchEl) setCookie('bm_adv_callsignSearch', callsignSearchEl.value, 15);
+        }
+
+        function loadPreferences() {
+            const timeRange = getCookie('bm_adv_timeRange');
+            const continent = getCookie('bm_adv_continent');
+            const country = getCookie('bm_adv_country');
+            const maxEntries = getCookie('bm_adv_maxEntries');
+            const talkgroup = getCookie('bm_adv_talkgroup');
+            const callsignSearch = getCookie('bm_adv_callsignSearch');
+            
+            if (timeRange && document.getElementById('timeRange')) {
+                document.getElementById('timeRange').value = timeRange;
+            }
+            if (maxEntries && document.getElementById('maxEntries')) {
+                document.getElementById('maxEntries').value = maxEntries;
+            }
+            if (callsignSearch && document.getElementById('callsignSearch')) {
+                document.getElementById('callsignSearch').value = callsignSearch;
+            }
+            
+            return { timeRange, continent, country, maxEntries, talkgroup, callsignSearch };
+        }
+
         // Event listeners
         document.getElementById('timeRange').addEventListener('change', function() {
+            savePreferences();
             loadGroupedData();
             loadCallsignData();
         });
@@ -883,6 +932,7 @@ router.get('/', authenticateUser, (req, res) => {
             await loadTalkgroups(this.value, '');
             loadGroupedData();
             loadCallsignData();
+            savePreferences();
         });
         document.getElementById('country').addEventListener('change', async function() {
             const continent = document.getElementById('continent').value;
@@ -890,8 +940,10 @@ router.get('/', authenticateUser, (req, res) => {
             await loadTalkgroups(continent, this.value);
             loadGroupedData();
             loadCallsignData();
+            savePreferences();
         });
         document.getElementById('talkgroup').addEventListener('change', function() {
+            savePreferences();
             loadGroupedData();
             loadCallsignData();
         });
@@ -899,10 +951,12 @@ router.get('/', authenticateUser, (req, res) => {
             // Debounce the search
             clearTimeout(this.searchTimeout);
             this.searchTimeout = setTimeout(() => {
+                savePreferences();
                 loadCallsignData();
             }, 500);
         });
         document.getElementById('maxEntries').addEventListener('change', function() {
+            savePreferences();
             loadGroupedData();
             loadCallsignData();
         });
@@ -920,7 +974,39 @@ router.get('/', authenticateUser, (req, res) => {
         });
 
         // Initial load
-        loadContinents().then(() => {
+        loadContinents().then(async () => {
+            // Load saved preferences
+            const savedPrefs = loadPreferences();
+            
+            // Set continent preference if saved
+            if (savedPrefs.continent && document.getElementById('continent')) {
+                const continentSelect = document.getElementById('continent');
+                // Check if the saved continent option exists
+                const option = Array.from(continentSelect.options).find(opt => opt.value === savedPrefs.continent);
+                if (option) {
+                    continentSelect.value = savedPrefs.continent;
+                    // Load countries for the saved continent
+                    await loadCountries(savedPrefs.continent);
+                    
+                    // Set country preference if saved
+                    if (savedPrefs.country && document.getElementById('country')) {
+                        const countrySelect = document.getElementById('country');
+                        const countryOption = Array.from(countrySelect.options).find(opt => opt.value === savedPrefs.country);
+                        if (countryOption) {
+                            countrySelect.value = savedPrefs.country;
+                            
+                            // Load talkgroups for the saved country
+                            await loadTalkgroups(savedPrefs.continent, savedPrefs.country);
+                            
+                            // Set talkgroup preference if saved
+                            if (savedPrefs.talkgroup && document.getElementById('talkgroup')) {
+                                document.getElementById('talkgroup').value = savedPrefs.talkgroup;
+                            }
+                        }
+                    }
+                }
+            }
+            
             loadGroupedData();
             loadCallsignData();
             setupAutoRefresh();
