@@ -52,7 +52,11 @@ async function testConnection() {
     console.error('3. Verify database credentials: DB_HOST, DB_USER, DB_PASSWORD, DB_NAME');
     process.exit(1);
   } finally {
-    await pool.end();
+    try {
+      await pool.end();
+    } catch (error) {
+      // Ignore errors when closing pool
+    }
   }
 }
 
