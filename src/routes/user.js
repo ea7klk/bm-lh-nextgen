@@ -67,8 +67,8 @@ const { authenticateUser } = require('../middleware/userAuth');
  *           type: string
  *           description: User's email address
  *         is_active:
- *           type: integer
- *           description: Whether the user account is active (0 or 1)
+ *           type: boolean
+ *           description: Whether the user account is active
  *         created_at:
  *           type: integer
  *           description: Unix timestamp of account creation
@@ -746,7 +746,7 @@ router.get('/verify', async (req, res) => {
 
     // Create user account
     await pool.query(`INSERT INTO users (callsign, name, email, password_hash, is_active, locale)
-      VALUES ($1, $2, $3, $4, 1, $5)`, [verification.callsign, verification.name, verification.email, verification.password_hash, verification.locale]);
+      VALUES ($1, $2, $3, $4, TRUE, $5)`, [verification.callsign, verification.name, verification.email, verification.password_hash, verification.locale]);
 
     // Mark verification as complete
     await pool.query(`UPDATE user_verifications SET is_verified = TRUE WHERE id = $1`, [verification.id]);
