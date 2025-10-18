@@ -155,32 +155,38 @@ Visit `http://localhost:3000` to access the modern web interface:
 
 ### API Access
 
-#### 1. Public Endpoints (No Authentication)
-Access these directly without an API key:
+#### Public Endpoints (No Authentication Required)
+
+All data endpoints are now publicly accessible without authentication:
 
 - `GET /public/lastheard` - Recent lastheard entries (with filtering)
+- `GET /public/lastheard/grouped` - Grouped data by talkgroup
+- `GET /public/lastheard/callsigns` - Grouped data by callsign
 - `GET /public/stats` - System statistics
-- Example: `/public/lastheard?callsign=EA7KLK&limit=10`
+- `GET /public/continents` - List of continents
+- `GET /public/countries?continent=<continent>` - Countries for a continent
+- `GET /public/talkgroups?continent=<continent>&country=<country>` - Talkgroups
 
-#### 2. Request an API Key
+**Example:**
+```bash
+curl http://localhost:3000/public/lastheard?callsign=EA7KLK&limit=10
+```
 
-For authenticated API access:
+#### API Key System (Reserved for Future Use)
+
+The API key authentication system is available for future authenticated features:
 
 1. **Request Key**: Visit `http://localhost:3000/api/auth/request-key`
 2. **Check Email**: Click the verification link sent to your email
 3. **Receive Key**: Your API key will be displayed and emailed to you
-4. **Use Key**: Include in requests via `X-API-Key` header
-
-```bash
-curl -H "X-API-Key: your-api-key-here" \
-  http://localhost:3000/api/lastheard
-```
+4. **Future Use**: API keys will be used for authenticated features when they are added
 
 **API Key Features:**
 - 365-day validity period
 - Automatic expiry reminders (30, 15, 5 days before)
 - Automatic cleanup of expired keys
 - Last usage tracking
+- Ready for future authenticated endpoints
 
 ### Admin Panel
 

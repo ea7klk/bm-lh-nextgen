@@ -680,8 +680,11 @@ router.get('/verify-email', async (req, res) => {
         </div>
         
         <div class="example">
-            <code>curl -H "X-API-Key: ${apiKey}" \\
-     ${process.env.BASE_URL || 'http://localhost:3000'}/api/lastheard</code>
+            <code>curl ${process.env.BASE_URL || 'http://localhost:3000'}/public/lastheard?limit=10</code>
+        </div>
+        
+        <div class="info">
+            <p><strong>ℹ️ Note:</strong> Currently, all data endpoints are publicly accessible and don't require an API key. Your API key is reserved for future authenticated features.</p>
         </div>
         
         <a href="/" class="back-link">${__('apiKey.goToHome')}</a>

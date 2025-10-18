@@ -267,8 +267,7 @@ async function sendApiKeyEmail(email, name, apiKey, locale = 'en') {
                             
                             <!-- Example Code -->
                             <div style="background-color: #2d2d2d; border-radius: 6px; padding: 16px; margin: 0 0 30px; overflow-x: auto;">
-                                <pre style="color: #ffffff; margin: 0; font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.6;">curl -H "X-API-Key: ${apiKey}" \\
-     ${BASE_URL}/api/lastheard</pre>
+                                <pre style="color: #ffffff; margin: 0; font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.6;">curl ${BASE_URL}/public/lastheard?limit=10</pre>
                             </div>
                             
                             <!-- Info Box -->
@@ -314,8 +313,7 @@ ${i18n.__('email.howToUseTitle').toUpperCase()}
 ${i18n.__('email.includeKeyInHeader')} X-API-Key ${i18n.__('email.headerText')}
 
 Example:
-curl -H "X-API-Key: ${apiKey}" \\
-     ${BASE_URL}/api/lastheard
+curl ${BASE_URL}/public/lastheard?limit=10
 
 📚 ${i18n.__('email.apiDocumentation')}
 ${i18n.__('email.visitDocs')} ${BASE_URL}/api-docs ${i18n.__('email.forCompleteDocs')}
