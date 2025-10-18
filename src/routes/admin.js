@@ -105,7 +105,12 @@ router.get('/users/:id', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
     
-    res.json(result.rows[0]);
+    const user = result.rows[0];
+    // Convert BIGINT timestamp strings to numbers for proper JavaScript handling
+    user.created_at = user.created_at ? parseInt(user.created_at) : null;
+    user.last_login_at = user.last_login_at ? parseInt(user.last_login_at) : null;
+    
+    res.json(user);
   } catch (error) {
     console.error('Error fetching user:', error);
     res.status(500).json({ error: 'Failed to fetch user' });
@@ -1012,7 +1017,13 @@ router.get('/', async (req, res) => {
 router.get('/users', async (req, res) => {
   try {
     const result = await pool.query('SELECT id, callsign, name, email, is_active, created_at, last_login_at, locale FROM users ORDER BY created_at DESC');
-    res.json(result.rows);
+    // Convert BIGINT timestamp strings to numbers for proper JavaScript handling
+    const users = result.rows.map(user => ({
+      ...user,
+      created_at: user.created_at ? parseInt(user.created_at) : null,
+      last_login_at: user.last_login_at ? parseInt(user.last_login_at) : null
+    }));
+    res.json(users);
   } catch (error) {
     console.error('Error fetching users:', error);
     res.status(500).json({ error: 'Failed to fetch users' });
