@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db/database');
 const { authenticateAdmin } = require('../middleware/adminAuth');
-const { sendBroadcastEmail } = require('../services/emailService');
 
 // Apply admin authentication to all routes
 router.use(authenticateAdmin);
@@ -52,44 +51,6 @@ router.post('/expunge', async (req, res) => {
   } catch (error) {
     console.error('Error expunging records:', error);
     res.status(500).json({ error: 'Failed to expunge records' });
-  }
-});
-
-/**
- * Send broadcast email to all users (Admin only)
- */
-router.post('/send-broadcast-email', async (req, res) => {
-  try {
-    const { subject, message } = req.body;
-    
-    if (!subject || !message) {
-      return res.status(400).json({ error: 'Subject and message are required' });
-    }
-    
-    if (subject.length > 200) {
-      return res.status(400).json({ error: 'Subject must be 200 characters or less' });
-    }
-    
-    if (message.length > 10000) {
-      return res.status(400).json({ error: 'Message must be 10000 characters or less' });
-    }
-    
-    const result = await sendBroadcastEmail(subject, message);
-    
-    if (result.success) {
-      res.json({
-        message: 'Broadcast email sent successfully',
-        totalUsers: result.totalUsers,
-        emailsSent: result.emailsSent,
-        emailsFailed: result.emailsFailed,
-        failedDetails: result.failedDetails
-      });
-    } else {
-      res.status(500).json({ error: result.error || 'Failed to send broadcast email' });
-    }
-  } catch (error) {
-    console.error('Error sending broadcast email:', error);
-    res.status(500).json({ error: 'Failed to send broadcast email' });
   }
 });
 
@@ -429,70 +390,6 @@ router.get('/', async (req, res) => {
         .btn-secondary:hover {
             background: #5a6268;
         }
-        .email-form {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        .email-form .form-group {
-            margin-bottom: 0;
-        }
-        .email-form textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            resize: vertical;
-            min-height: 150px;
-        }
-        .email-form textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        .char-count {
-            text-align: right;
-            font-size: 12px;
-            color: #999;
-            margin-top: 5px;
-        }
-        .send-email-btn {
-            padding: 12px 24px;
-            background: #28a745;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        .send-email-btn:hover {
-            background: #218838;
-        }
-        .send-email-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-        .email-preview {
-            background: #f8f9fa;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            padding: 20px;
-            margin-top: 10px;
-        }
-        .email-preview h4 {
-            margin: 0 0 10px 0;
-            color: #333;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        .email-preview .preview-content {
-            color: #666;
-            font-size: 13px;
-            line-height: 1.6;
-            white-space: pre-wrap;
-        }
     </style>
 </head>
 <body>
@@ -552,34 +449,6 @@ router.get('/', async (req, res) => {
             <button class="expunge-btn" onclick="expungeOldRecords()" id="expungeBtn">
                 Expunge Records Older Than 7 Days
             </button>
-        </div>
-
-        <div class="section">
-            <h2>📧 Send Broadcast Email</h2>
-            <p style="color: #666; margin-bottom: 20px;">
-                Send a custom email message to all active users. This will be sent to all users with verified email addresses.
-            </p>
-            <form class="email-form" id="broadcastEmailForm">
-                <div class="form-group">
-                    <label for="emailSubject">Subject *</label>
-                    <input type="text" id="emailSubject" required maxlength="200" placeholder="Enter email subject...">
-                    <div class="char-count"><span id="subjectCount">0</span>/200</div>
-                </div>
-                <div class="form-group">
-                    <label for="emailMessage">Message *</label>
-                    <textarea id="emailMessage" required maxlength="10000" placeholder="Enter your message here...&#10;&#10;This message will be sent to all active users."></textarea>
-                    <div class="char-count"><span id="messageCount">0</span>/10000</div>
-                </div>
-                <div class="email-preview" id="emailPreview" style="display: none;">
-                    <h4>📋 Preview</h4>
-                    <div class="preview-content" id="previewContent"></div>
-                </div>
-                <div>
-                    <button type="submit" class="send-email-btn" id="sendEmailBtn">
-                        📨 Send to All Users
-                    </button>
-                </div>
-            </form>
         </div>
 
         <a href="/" class="back-link">← Back to Home</a>
@@ -826,106 +695,6 @@ router.get('/', async (req, res) => {
                 btn.textContent = 'Expunge Records Older Than 7 Days';
             }
         }
-
-        // Character counters for email form
-        document.getElementById('emailSubject').addEventListener('input', function() {
-            document.getElementById('subjectCount').textContent = this.value.length;
-            updateEmailPreview();
-        });
-
-        document.getElementById('emailMessage').addEventListener('input', function() {
-            document.getElementById('messageCount').textContent = this.value.length;
-            updateEmailPreview();
-        });
-
-        function updateEmailPreview() {
-            const subject = document.getElementById('emailSubject').value;
-            const message = document.getElementById('emailMessage').value;
-            const preview = document.getElementById('emailPreview');
-            const previewContent = document.getElementById('previewContent');
-            
-            if (subject || message) {
-                preview.style.display = 'block';
-                previewContent.innerHTML = '<strong>Subject:</strong> ' + escapeHtml(subject) + '\n\n' + escapeHtml(message);
-            } else {
-                preview.style.display = 'none';
-            }
-        }
-
-        // Handle broadcast email form submission
-        document.getElementById('broadcastEmailForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const subject = document.getElementById('emailSubject').value.trim();
-            const message = document.getElementById('emailMessage').value.trim();
-            
-            if (!subject || !message) {
-                showMessage('Subject and message are required', 'error');
-                return;
-            }
-            
-            // Confirmation dialog with warning
-            const confirmMessage = 'Are you sure you want to send this email to ALL active users?\n\n' +
-                                 'Subject: ' + subject + '\n\n' +
-                                 'This action cannot be undone.';
-            
-            if (!confirm(confirmMessage)) {
-                return;
-            }
-            
-            const btn = document.getElementById('sendEmailBtn');
-            const originalText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '⏳ Sending...';
-            
-            try {
-                const response = await fetch('/admin/send-broadcast-email', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ subject, message })
-                });
-                
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to send broadcast email');
-                }
-                
-                let successMessage = 'Broadcast email sent successfully!\n\n' +
-                                   'Total Users: ' + data.totalUsers + '\n' +
-                                   'Emails Sent: ' + data.emailsSent + '\n' +
-                                   'Failed: ' + data.emailsFailed;
-                
-                if (data.emailsFailed > 0 && data.failedDetails) {
-                    successMessage += '\n\nFailed emails:\n';
-                    data.failedDetails.slice(0, 5).forEach(detail => {
-                        successMessage += '- ' + detail.email + ': ' + detail.error + '\n';
-                    });
-                    if (data.failedDetails.length > 5) {
-                        successMessage += '...and ' + (data.failedDetails.length - 5) + ' more';
-                    }
-                }
-                
-                alert(successMessage);
-                showMessage('Broadcast email sent to ' + data.emailsSent + ' users', 'success');
-                
-                // Clear the form
-                document.getElementById('emailSubject').value = '';
-                document.getElementById('emailMessage').value = '';
-                document.getElementById('subjectCount').textContent = '0';
-                document.getElementById('messageCount').textContent = '0';
-                updateEmailPreview();
-                
-            } catch (error) {
-                console.error('Error sending broadcast email:', error);
-                showMessage('Failed to send broadcast email: ' + error.message, 'error');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-            }
-        });
 
         // Close modal when clicking outside
         window.onclick = function(event) {

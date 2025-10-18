@@ -290,45 +290,30 @@ router.get('/', authenticateUser, (req, res) => {
             padding: 40px;
             color: #666;
         }
-        .search-container {
-            position: relative;
-        }
-        .search-container #talkgroupSearch {
-            width: 100%;
-            padding: 10px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px 6px 0 0;
-            font-size: 14px;
-            background: white;
-        }
-        .search-container #talkgroupSearch:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        .search-container #talkgroup {
-            width: 100%;
-            padding: 5px 10px;
-            border: 2px solid #e0e0e0;
+        .autocomplete-suggestions {
+            position: absolute;
+            border: 1px solid #e0e0e0;
             border-top: none;
-            border-radius: 0 0 6px 6px;
-            font-size: 13px;
-            background: white;
-            cursor: pointer;
+            z-index: 99;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: white;
             max-height: 200px;
             overflow-y: auto;
+            border-radius: 0 0 6px 6px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-        .search-container #talkgroup option {
-            padding: 8px;
+        .autocomplete-suggestion {
+            padding: 10px;
             cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
         }
-        .search-container #talkgroup option:hover {
+        .autocomplete-suggestion:hover {
             background-color: #f8f9fa;
         }
-        .search-container.collapsed #talkgroup {
-            display: none;
-        }
-        .search-container.expanded #talkgroup {
-            display: block;
+        .search-container {
+            position: relative;
         }
         .tooltip {
             position: relative;
@@ -436,10 +421,8 @@ router.get('/', authenticateUser, (req, res) => {
             <div class="control-group" id="talkgroupGroup">
                 <label for="talkgroup">Talkgroup (ID or Name)</label>
                 <div class="search-container">
-                    <input type="text" id="talkgroupSearch" placeholder="Search talkgroup...">
-                    <select id="talkgroup" size="8" style="display: none;">
-                        <option value="">All Talkgroups</option>
-                    </select>
+                    <input type="text" id="talkgroup" placeholder="Search talkgroup...">
+                    <div id="talkgroupSuggestions" class="autocomplete-suggestions" style="display: none;"></div>
                 </div>
             </div>
             <div class="control-group">
@@ -643,7 +626,6 @@ router.get('/', authenticateUser, (req, res) => {
                 
                 if (talkgroups.length > 0) {
                     talkgroupsCache = talkgroups;
-                    populateTalkgroupDropdown(talkgroups);
                     document.getElementById('talkgroupGroup').style.display = 'flex';
                 } else {
                     document.getElementById('talkgroupGroup').style.display = 'none';
@@ -656,97 +638,38 @@ router.get('/', authenticateUser, (req, res) => {
             }
         }
 
-        // Populate talkgroup dropdown with all talkgroups
-        function populateTalkgroupDropdown(talkgroups) {
-            const select = document.getElementById('talkgroup');
-            select.innerHTML = '<option value="">All Talkgroups</option>';
+        // Talkgroup autocomplete
+        document.getElementById('talkgroup').addEventListener('input', function() {
+            const input = this.value.toLowerCase();
+            const suggestions = document.getElementById('talkgroupSuggestions');
             
-            talkgroups.forEach(tg => {
-                const option = document.createElement('option');
-                option.value = tg.talkgroup_id;
-                option.textContent = tg.talkgroup_id + ' - ' + tg.name;
-                option.dataset.name = tg.name.toLowerCase();
-                option.dataset.id = tg.talkgroup_id.toString();
-                select.appendChild(option);
-            });
-        }
-
-        // Talkgroup search functionality
-        document.getElementById('talkgroupSearch').addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const select = document.getElementById('talkgroup');
-            const container = document.querySelector('.search-container');
-            const options = select.querySelectorAll('option');
-            
-            if (!searchTerm) {
-                // Show all options when search is empty
-                options.forEach(opt => {
-                    opt.style.display = '';
-                });
-                container.classList.add('collapsed');
-                container.classList.remove('expanded');
+            if (!input) {
+                suggestions.style.display = 'none';
                 return;
             }
-            
-            // Filter options based on search term
-            let hasVisibleOptions = false;
-            options.forEach(opt => {
-                if (opt.value === '') {
-                    opt.style.display = 'none'; // Hide "All Talkgroups" during search
-                } else {
-                    const matchesId = opt.dataset.id.includes(searchTerm);
-                    const matchesName = opt.dataset.name.includes(searchTerm);
-                    
-                    if (matchesId || matchesName) {
-                        opt.style.display = '';
-                        hasVisibleOptions = true;
-                    } else {
-                        opt.style.display = 'none';
-                    }
-                }
-            });
-            
-            // Show/hide dropdown based on matches
-            if (hasVisibleOptions) {
-                container.classList.remove('collapsed');
-                container.classList.add('expanded');
+
+            const matches = talkgroupsCache.filter(tg => 
+                tg.talkgroup_id.toString().includes(input) || 
+                tg.name.toLowerCase().includes(input)
+            ).slice(0, 10);
+
+            if (matches.length > 0) {
+                suggestions.innerHTML = matches.map(tg => 
+                    '<div class="autocomplete-suggestion" onclick="selectTalkgroup(' + tg.talkgroup_id + ', &quot;' + tg.name.replace(/"/g, "&quot;") + '&quot;)">' +
+                    tg.talkgroup_id + ' - ' + tg.name +
+                    '</div>'
+                ).join('');
+                suggestions.style.display = 'block';
             } else {
-                container.classList.add('collapsed');
-                container.classList.remove('expanded');
+                suggestions.style.display = 'none';
             }
         });
 
-        // Handle talkgroup selection
-        document.getElementById('talkgroup').addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            if (this.value) {
-                document.getElementById('talkgroupSearch').value = selectedOption.textContent;
-            } else {
-                document.getElementById('talkgroupSearch').value = '';
-            }
-            // Collapse dropdown after selection
-            document.querySelector('.search-container').classList.add('collapsed');
-            document.querySelector('.search-container').classList.remove('expanded');
+        function selectTalkgroup(id, name) {
+            document.getElementById('talkgroup').value = id + ' - ' + name;
+            document.getElementById('talkgroupSuggestions').style.display = 'none';
             loadGroupedData();
-            loadCallsignData();
-        });
-
-        // Focus search box to show dropdown
-        document.getElementById('talkgroupSearch').addEventListener('focus', function() {
-            if (this.value && talkgroupsCache.length > 0) {
-                document.querySelector('.search-container').classList.remove('collapsed');
-                document.querySelector('.search-container').classList.add('expanded');
-            }
-        });
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function(e) {
-            const container = document.querySelector('.search-container');
-            if (container && !container.contains(e.target)) {
-                container.classList.add('collapsed');
-                container.classList.remove('expanded');
-            }
-        });
+        }
 
         // Load grouped data (talkgroups)
         async function loadGroupedData() {
@@ -758,7 +681,8 @@ router.get('/', authenticateUser, (req, res) => {
                     ? countrySelect.value 
                     : '';
                 const maxEntries = document.getElementById('maxEntries').value;
-                const talkgroupId = document.getElementById('talkgroup').value;
+                const talkgroupInput = document.getElementById('talkgroup').value;
+                const talkgroupId = talkgroupInput ? talkgroupInput.split(' - ')[0].trim() : '';
                 
                 let url = '/public/lastheard/grouped?timeRange=' + timeRange + '&limit=' + maxEntries;
                 if (continent && continent !== 'All') {
@@ -828,7 +752,8 @@ router.get('/', authenticateUser, (req, res) => {
                 const country = (continent !== 'All' && continent !== 'Global' && countrySelect.options.length > 1) 
                     ? countrySelect.value 
                     : '';
-                const talkgroupId = document.getElementById('talkgroup').value;
+                const talkgroupInput = document.getElementById('talkgroup').value;
+                const talkgroupId = talkgroupInput ? talkgroupInput.split(' - ')[0].trim() : '';
                 
                 let url = '/public/lastheard/callsigns?timeRange=' + timeRange + '&limit=' + maxEntries;
                 if (callsignSearch) {
@@ -961,9 +886,12 @@ router.get('/', authenticateUser, (req, res) => {
         });
         document.getElementById('country').addEventListener('change', async function() {
             const continent = document.getElementById('continent').value;
-            document.getElementById('talkgroupSearch').value = '';
             document.getElementById('talkgroup').value = '';
             await loadTalkgroups(continent, this.value);
+            loadGroupedData();
+            loadCallsignData();
+        });
+        document.getElementById('talkgroup').addEventListener('change', function() {
             loadGroupedData();
             loadCallsignData();
         });
@@ -982,6 +910,13 @@ router.get('/', authenticateUser, (req, res) => {
             const selectedLang = this.value;
             setCookie('bm_lang', selectedLang, 15);
             window.location.reload();
+        });
+
+        // Close autocomplete when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-container')) {
+                document.getElementById('talkgroupSuggestions').style.display = 'none';
+            }
         });
 
         // Initial load
