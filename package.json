@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node src/server.js",
+    "dev:client": "vite",
+    "build": "vite build",
+    "build:prod": "vite build && node src/server.js",
     "test": "echo \"✅ No tests configured yet\"",
     "test-email": "node test-email.js",
     "lint": "echo \"✅ No linting configured yet\"",
@@ -28,14 +31,21 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "i18n": "^0.15.2",
+    "i18next": "^25.6.0",
     "nodemailer": "^7.0.9",
     "pg": "^8.13.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-i18next": "^16.1.0",
+    "react-router-dom": "^7.9.4",
     "socket.io-client": "^4.8.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "better-sqlite3": "^12.4.1"
+    "@vitejs/plugin-react": "^5.0.4",
+    "better-sqlite3": "^12.4.1",
+    "vite": "^7.1.10"
   }
 }

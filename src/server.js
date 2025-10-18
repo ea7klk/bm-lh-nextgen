@@ -2,6 +2,7 @@
 require('dotenv').config();
 
 const express = require('express');
+const path = require('path');
 const cookieParser = require('cookie-parser');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
@@ -45,12 +46,6 @@ startBrandmeisterService();
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Frontend routes (public HTML pages)
-app.use('/', frontendRoutes);
-
-// Advanced functions (protected HTML page)
-app.use('/advanced', advancedRoutes);
-
 // Public API routes (no authentication required for viewing)
 app.use('/public', publicRoutes);
 
@@ -69,15 +64,19 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: Date.now() });
 });
 
+// Serve React app static files
+const distPath = path.join(__dirname, '..', 'dist');
+app.use(express.static(distPath));
+
+// Handle React Router - send all other requests to index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(distPath, 'index.html'));
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Not found' });
 });
 
 // Start server

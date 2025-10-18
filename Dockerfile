@@ -14,6 +14,14 @@ COPY package*.json ./
 # Install all dependencies (including dev dependencies for building)
 RUN npm ci && npm cache clean --force
 
+# Copy source code needed for build
+COPY client ./client
+COPY locales ./locales
+COPY vite.config.js ./
+
+# Build React app
+RUN npm run build
+
 # Production stage
 FROM node:20-alpine AS production
 
@@ -33,8 +41,15 @@ COPY package*.json ./
 # Copy node_modules from builder stage
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 
+# Copy built React app from builder stage
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+
 # Copy source code
-COPY --chown=nodejs:nodejs . .
+COPY --chown=nodejs:nodejs src ./src
+COPY --chown=nodejs:nodejs locales ./locales
+COPY --chown=nodejs:nodejs migrate-sqlite-to-postgres.js ./
+COPY --chown=nodejs:nodejs test-db-connection.js ./
+COPY --chown=nodejs:nodejs test-email.js ./
 
 # Set permissions
 RUN chown -R nodejs:nodejs /app
