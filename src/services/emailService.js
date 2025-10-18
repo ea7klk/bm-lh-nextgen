@@ -783,11 +783,146 @@ ${i18n.__('email.automatedEmail')}
   }
 }
 
+async function sendBroadcastEmail(subject, message) {
+  if (!transporter) {
+    console.error('Email transporter not available. Please check email configuration.');
+    return { success: false, error: 'Email transporter not available' };
+  }
+
+  const { pool } = require('../db/database');
+  
+  try {
+    // Get all active users with verified emails
+    const result = await pool.query(
+      'SELECT email, name, callsign, locale FROM users WHERE is_active = true AND email IS NOT NULL AND is_verified = true ORDER BY email'
+    );
+    
+    if (result.rows.length === 0) {
+      return { success: false, error: 'No active users with verified emails found' };
+    }
+
+    const users = result.rows;
+    const emailsSent = [];
+    const emailsFailed = [];
+
+    // Send emails sequentially with a small delay to avoid hitting email provider rate limits
+    // A 100ms delay provides a balance between speed and reliability
+    // For large user bases (>1000), consider:
+    // - Grouping users by locale to reduce locale switching overhead
+    // - Implementing a queue-based system with batch processing
+    for (let i = 0; i < users.length; i++) {
+      const user = users[i];
+      const locale = user.locale || 'en';
+      i18n.setLocale(locale);
+
+      const mailOptions = {
+        from: EMAIL_FROM,
+        to: user.email,
+        subject: subject,
+        html: `
+<!DOCTYPE html>
+<html lang="${locale}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${subject}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background-color: #f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 40px 30px; text-align: center;">
+                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Brandmeister Lastheard</h1>
+                            <p style="color: #ffffff; margin: 10px 0 0; font-size: 16px; opacity: 0.9;">Next Generation</p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px;">
+                            <p style="color: #666666; line-height: 1.6; margin: 0 0 20px; font-size: 16px;">${i18n.__('email.hello')} ${user.name || user.callsign},</p>
+                            
+                            <div style="color: #333333; line-height: 1.8; margin: 0 0 30px; font-size: 15px;">
+                                ${message.replace(/\n/g, '<br>')}
+                            </div>
+                            
+                            <div style="background-color: #e7f3ff; border-left: 4px solid #667eea; padding: 16px; border-radius: 6px; margin: 0 0 20px;">
+                                <p style="color: #333333; margin: 0; font-size: 14px; line-height: 1.6;">This is an administrative message from the Brandmeister Lastheard team.</p>
+                            </div>
+                            
+                            <p style="color: #999999; line-height: 1.6; margin: 0; font-size: 14px;">If you have any questions, please contact us through the support channels.</p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8f9fa; padding: 30px 40px; text-align: center; border-top: 1px solid #e0e0e0;">
+                            <p style="color: #999999; margin: 0; font-size: 14px; line-height: 1.6;">${i18n.__('email.brandmeisterApi')}</p>
+                            <p style="color: #999999; margin: 10px 0 0; font-size: 12px;">${i18n.__('email.automatedEmail')}</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+        `,
+        text: `
+Brandmeister Lastheard Next Generation
+
+${i18n.__('email.hello')} ${user.name || user.callsign},
+
+${message}
+
+This is an administrative message from the Brandmeister Lastheard team.
+
+If you have any questions, please contact us through the support channels.
+
+---
+${i18n.__('email.brandmeisterApi')}
+${i18n.__('email.automatedEmail')}
+        `,
+      };
+
+      try {
+        await transporter.sendMail(mailOptions);
+        emailsSent.push(user.email);
+        console.log(`Broadcast email sent to ${user.email}`);
+        
+        // Add a small delay between emails to help with rate limiting
+        if (i < users.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      } catch (error) {
+        console.error(`Error sending broadcast email to ${user.email}:`, error.message);
+        emailsFailed.push({ email: user.email, error: error.message });
+      }
+    }
+
+    return {
+      success: true,
+      totalUsers: users.length,
+      emailsSent: emailsSent.length,
+      emailsFailed: emailsFailed.length,
+      failedDetails: emailsFailed
+    };
+
+  } catch (error) {
+    console.error('Error sending broadcast email:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 module.exports = {
   sendVerificationEmail,
   sendApiKeyEmail,
   sendExpiryReminderEmail,
   sendPasswordResetEmail,
   sendEmailChangeVerificationEmail,
+  sendBroadcastEmail,
   testEmailConfig,
 };
