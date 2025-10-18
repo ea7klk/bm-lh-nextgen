@@ -100,6 +100,11 @@ cp .env.example .env
 |----------|-------------|---------|----------|
 | `PORT` | Server port | 3000 | No |
 | `BASE_URL` | Base URL for email links | http://localhost:3000 | Yes for email |
+| `DB_HOST` | PostgreSQL host | postgres | **Yes** |
+| `DB_PORT` | PostgreSQL port | 5432 | No |
+| `DB_USER` | PostgreSQL user | bm_user | **Yes** |
+| `DB_PASSWORD` | PostgreSQL password | - | **Yes** |
+| `DB_NAME` | PostgreSQL database name | bm_lastheard | **Yes** |
 | `ADMIN_PASSWORD` | Admin panel password | - | **Yes** |
 | `EMAIL_HOST` | SMTP server hostname | - | For email features |
 | `EMAIL_PORT` | SMTP server port | 587 | For email features |
@@ -238,7 +243,15 @@ The following endpoints are publicly accessible without authentication:
 
 ## 💾 Database
 
-SQLite database automatically created at `data/lastheard.db` on first run.
+PostgreSQL database with automatic schema initialization on first run. Database data is persisted in `./db` directory.
+
+**Database Configuration:**
+- PostgreSQL 16 (Alpine)
+- Connection pooling with `pg` driver
+- Automatic schema migrations
+- Data persistence via Docker volume
+
+**Migration from SQLite:** If upgrading from an older version using SQLite, see [MIGRATION.md](MIGRATION.md) for migration instructions.
 
 ### Main Tables
 
@@ -248,14 +261,14 @@ SQLite database automatically created at `data/lastheard.db` on first run.
 - `TalkerAlias`, `duration`, `created_at`
 
 **talkgroups** - Talkgroup information
-- `id`, `email`, `name`, `verification_token` (UUID)
-- `is_verified`, `created_at`, `expires_at`
-
-**talkgroups** - Talkgroup information
 - `id`, `talkgroup_id`, `name`, `country`, `continent`
 - `full_country_name`, `last_updated`
-- Auto-updated daily at 02:00 AM from Brandmeister CSV data
+- Auto-updated daily at 02:00 AM from Brandmeister API data
 - **Note:** Local talkgroup (ID 9) is automatically filtered from all queries
+
+**users** - User accounts
+- `id`, `callsign`, `name`, `email`, `password_hash`
+- `is_active`, `created_at`, `last_login_at`, `locale`
 
 ## 📁 Project Structure
 
@@ -369,11 +382,18 @@ docker run -d \
 # Build image
 docker build -t bm-lh-nextgen .
 
-# Run container
+# Note: When running standalone, you need a PostgreSQL database
+# It's recommended to use docker-compose instead for automatic setup
+
+# If you have an existing PostgreSQL instance:
 docker run -d \
   --name bm-lh-nextgen \
   -p 3000:3000 \
-  -v $(pwd)/data:/app/data \
+  -e DB_HOST=your-postgres-host \
+  -e DB_PORT=5432 \
+  -e DB_USER=bm_user \
+  -e DB_PASSWORD=your-db-password \
+  -e DB_NAME=bm_lastheard \
   -e ADMIN_PASSWORD=your-secure-password \
   -e EMAIL_HOST=smtp.gmail.com \
   -e EMAIL_USER=your-email@gmail.com \
@@ -387,7 +407,8 @@ docker run -d \
 - ✅ **Multi-stage build** - Optimized image size
 - ✅ **Non-root user** - Enhanced security (UID 1001)
 - ✅ **Health checks** - Automatic monitoring
-- ✅ **Data persistence** - Volume mounting for database
+- ✅ **PostgreSQL integration** - Managed database service
+- ✅ **Data persistence** - Volume mounting for PostgreSQL data
 - ✅ **Multi-architecture** - AMD64 and ARM64 support
 
 **Important:** When using docker-compose, ensure your `.env` file is in the same directory as `docker-compose.yml`. Docker Compose will automatically load variables from `.env` and pass them to the container.
