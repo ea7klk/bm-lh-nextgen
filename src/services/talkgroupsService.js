@@ -1,5 +1,5 @@
 const https = require('https');
-const { db } = require('../db/database');
+const { pool } = require('../db/database');
 
 // Country code to full country name mapping
 const COUNTRY_NAMES = {
@@ -491,15 +491,12 @@ async function updateTalkgroups() {
 
     console.log(`Parsed ${records.length} talkgroups from JSON API`);
 
-    // Begin transaction for better performance
-    const insertStmt = db.prepare(`
-      INSERT OR REPLACE INTO talkgroups (
-        talkgroup_id, name, country, continent, full_country_name, last_updated
-      ) VALUES (?, ?, ?, ?, ?, strftime('%s', 'now'))
-    `);
+    // Use PostgreSQL transaction for better performance
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
 
-    const transaction = db.transaction((talkgroups) => {
-      for (const tg of talkgroups) {
+      for (const tg of records) {
         // Extract talkgroup data from JSON format
         const talkgroupId = tg.id;
         const name = tg.name || '';
@@ -744,14 +741,29 @@ async function updateTalkgroups() {
         const continent = COUNTRY_TO_CONTINENT[country] || 
                          (country === 'Global' ? 'Global' : null);
 
-        insertStmt.run(talkgroupId, name, country, continent, fullCountryName);
+        await client.query(`
+          INSERT INTO talkgroups (
+            talkgroup_id, name, country, continent, full_country_name, last_updated
+          ) VALUES ($1, $2, $3, $4, $5, EXTRACT(EPOCH FROM NOW()))
+          ON CONFLICT (talkgroup_id) 
+          DO UPDATE SET 
+            name = EXCLUDED.name,
+            country = EXCLUDED.country,
+            continent = EXCLUDED.continent,
+            full_country_name = EXCLUDED.full_country_name,
+            last_updated = EXTRACT(EPOCH FROM NOW())
+        `, [talkgroupId, name, country, continent, fullCountryName]);
       }
-    });
 
-    transaction(records);
-
-    console.log('Talkgroups updated successfully');
-    return { success: true, count: records.length };
+      await client.query('COMMIT');
+      console.log('Talkgroups updated successfully');
+      return { success: true, count: records.length };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error('Error updating talkgroups:', error.message);
     return { success: false, error: error.message };
@@ -759,10 +771,10 @@ async function updateTalkgroups() {
 }
 
 // Get all talkgroups
-function getAllTalkgroups() {
+async function getAllTalkgroups() {
   try {
-    const stmt = db.prepare('SELECT * FROM talkgroups WHERE talkgroup_id != 9 ORDER BY talkgroup_id');
-    return stmt.all();
+    const result = await pool.query('SELECT * FROM talkgroups WHERE talkgroup_id != 9 ORDER BY talkgroup_id');
+    return result.rows;
   } catch (error) {
     console.error('Error fetching talkgroups:', error);
     return [];
@@ -770,10 +782,10 @@ function getAllTalkgroups() {
 }
 
 // Get talkgroup by ID
-function getTalkgroupById(talkgroupId) {
+async function getTalkgroupById(talkgroupId) {
   try {
-    const stmt = db.prepare('SELECT * FROM talkgroups WHERE talkgroup_id = ?');
-    return stmt.get(talkgroupId);
+    const result = await pool.query('SELECT * FROM talkgroups WHERE talkgroup_id = $1', [talkgroupId]);
+    return result.rows[0] || null;
   } catch (error) {
     console.error('Error fetching talkgroup:', error);
     return null;
@@ -781,10 +793,10 @@ function getTalkgroupById(talkgroupId) {
 }
 
 // Get talkgroups by continent
-function getTalkgroupsByContinent(continent) {
+async function getTalkgroupsByContinent(continent) {
   try {
-    const stmt = db.prepare('SELECT * FROM talkgroups WHERE continent = ? AND talkgroup_id != 9 ORDER BY talkgroup_id');
-    return stmt.all(continent);
+    const result = await pool.query('SELECT * FROM talkgroups WHERE continent = $1 AND talkgroup_id != 9 ORDER BY talkgroup_id', [continent]);
+    return result.rows;
   } catch (error) {
     console.error('Error fetching talkgroups by continent:', error);
     return [];
@@ -792,10 +804,10 @@ function getTalkgroupsByContinent(continent) {
 }
 
 // Get talkgroups by country
-function getTalkgroupsByCountry(country) {
+async function getTalkgroupsByCountry(country) {
   try {
-    const stmt = db.prepare('SELECT * FROM talkgroups WHERE country = ? AND talkgroup_id != 9 ORDER BY talkgroup_id');
-    return stmt.all(country);
+    const result = await pool.query('SELECT * FROM talkgroups WHERE country = $1 AND talkgroup_id != 9 ORDER BY talkgroup_id', [country]);
+    return result.rows;
   } catch (error) {
     console.error('Error fetching talkgroups by country:', error);
     return [];

@@ -1,6 +1,6 @@
-const { db } = require('../db/database');
+const { pool } = require('../db/database');
 
-function authenticateUser(req, res, next) {
+async function authenticateUser(req, res, next) {
   const sessionToken = req.cookies.session_token;
 
   if (!sessionToken) {
@@ -12,13 +12,13 @@ function authenticateUser(req, res, next) {
 
   try {
     // Find session
-    const sessionStmt = db.prepare(`
+    const result = await pool.query(`
       SELECT us.*, u.id as user_id, u.callsign, u.name, u.email, u.is_active, u.locale
       FROM user_sessions us
       JOIN users u ON us.user_id = u.id
-      WHERE us.session_token = ?
-    `);
-    const session = sessionStmt.get(sessionToken);
+      WHERE us.session_token = $1
+    `, [sessionToken]);
+    const session = result.rows[0];
 
     if (!session) {
       res.clearCookie('session_token');
@@ -32,8 +32,7 @@ function authenticateUser(req, res, next) {
     const currentTime = Math.floor(Date.now() / 1000);
     if (session.expires_at < currentTime) {
       // Delete expired session
-      const deleteStmt = db.prepare('DELETE FROM user_sessions WHERE id = ?');
-      deleteStmt.run(session.id);
+      await pool.query('DELETE FROM user_sessions WHERE id = $1', [session.id]);
       res.clearCookie('session_token');
       
       return res.status(401).json({ 
@@ -66,7 +65,7 @@ function authenticateUser(req, res, next) {
   }
 }
 
-function optionalAuthentication(req, res, next) {
+async function optionalAuthentication(req, res, next) {
   const sessionToken = req.cookies.session_token;
 
   if (!sessionToken) {
@@ -75,13 +74,13 @@ function optionalAuthentication(req, res, next) {
   }
 
   try {
-    const sessionStmt = db.prepare(`
+    const result = await pool.query(`
       SELECT us.*, u.id as user_id, u.callsign, u.name, u.email, u.is_active, u.locale
       FROM user_sessions us
       JOIN users u ON us.user_id = u.id
-      WHERE us.session_token = ?
-    `);
-    const session = sessionStmt.get(sessionToken);
+      WHERE us.session_token = $1
+    `, [sessionToken]);
+    const session = result.rows[0];
 
     if (!session) {
       req.user = null;

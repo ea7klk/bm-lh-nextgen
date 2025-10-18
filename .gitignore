@@ -144,5 +144,8 @@ data/*.db
 data/*.db-shm
 data/*.db-wal
 
+# PostgreSQL data directory
+db/
+
 # Test scripts
 test-scheduler.js
