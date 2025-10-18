@@ -562,13 +562,6 @@ router.get('/', authenticateUser, (req, res) => {
         let autoRefreshInterval = null;
         let talkgroupsList = [];
         let selectedTalkgroupId = '';
-        
-        // Escape HTML to prevent XSS
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
 
         // Format seconds to hours:minutes:seconds
         function formatDuration(seconds) {
