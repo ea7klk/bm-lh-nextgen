@@ -11,7 +11,7 @@ function App() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch('/user/profile', {
+        const response = await fetch('/user/api/me', {
           credentials: 'include',
         });
         

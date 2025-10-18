@@ -1,22 +1,25 @@
 # bm-lh-nextgen
 **Brandmeister Lastheard Next Generation**
 
-A production-ready Node.js REST API with real-time web interface for tracking Brandmeister DMR radio activity. Features comprehensive Docker support, automated CI/CD, and professional email notifications.
+A production-ready Node.js REST API with modern React web interface for tracking Brandmeister DMR radio activity. Features comprehensive Docker support, automated CI/CD, and professional email notifications.
 
 ## ✨ Key Features
 
 ### Web Interface
-- **Modern Responsive UI** - Real-time DMR activity display
-- **Auto-refresh** - Live updates every 30 seconds (toggleable)
+- **Modern React UI** - Built with React and Vite for fast, responsive experience
+- **Real-time Updates** - Live DMR activity display with auto-refresh
+- **Multi-language Support** - Available in English, Spanish, German, and French
 - **Public Access** - No authentication required for viewing
-- **Advanced Filtering** - Filter by callsign or talkgroup ID
-- **Statistics Dashboard** - Total entries, 24h activity, unique callsigns/talkgroups
+- **Advanced Filtering** - Filter by continent, country, and time range
+- **Interactive Charts** - Visual statistics for QSO counts and talk time
+- **Responsive Design** - Optimized for desktop, tablet, and mobile devices
 
 ### API & Backend
 - **RESTful API** - Built with Express.js and comprehensive Swagger documentation
-- **SQLite Database** - Local data storage with efficient querying
-- **User Authentication** - Secure registration and login system
+- **PostgreSQL Database** - Robust data storage with efficient querying
+- **User Authentication** - Secure registration and login system with JWT
 - **Smart Filtering** - Automatic exclusion of Local talkgroup (ID 9)
+- **Real-time Data** - WebSocket connection to Brandmeister network
 
 ### DevOps & Security
 - **Docker Ready** - Multi-stage builds, health checks, non-root execution
@@ -69,6 +72,7 @@ docker run -d \
 **Prerequisites:**
 - Node.js v20 or higher
 - npm
+- PostgreSQL database
 
 ```bash
 # Clone and install dependencies
@@ -78,11 +82,28 @@ npm install
 
 # Configure environment
 cp .env.example .env
-# Edit .env with your settings
+# Edit .env with your settings (including PostgreSQL credentials)
+
+# Build React frontend
+npm run build
 
 # Start the server
 npm start
 ```
+
+### Development Mode
+
+For active development with hot-reload:
+
+```bash
+# Terminal 1: Start the backend server
+npm run dev
+
+# Terminal 2: Start the React dev server with hot-reload
+npm run dev:client
+```
+
+The React dev server will proxy API requests to the backend server.
 
 ## ⚙️ Configuration
 
@@ -274,38 +295,55 @@ PostgreSQL database with automatic schema initialization on first run. Database 
 
 ```
 bm-lh-nextgen/
-├── src/
+├── client/                      # React frontend application
+│   ├── src/
+│   │   ├── components/          # Reusable React components
+│   │   │   ├── Header.jsx       # Header with user authentication
+│   │   │   ├── Footer.jsx       # Footer component
+│   │   │   └── *.css            # Component-specific styles
+│   │   ├── pages/               # Page components
+│   │   │   ├── HomePage.jsx     # Main dashboard page
+│   │   │   └── *.css            # Page-specific styles
+│   │   ├── i18n/                # Internationalization
+│   │   │   └── i18n.js          # i18next configuration
+│   │   ├── utils/               # Utility functions
+│   │   │   ├── api.js           # API helper functions
+│   │   │   └── cookies.js       # Cookie management
+│   │   ├── styles/              # Global styles
+│   │   │   └── global.css       # Global CSS
+│   │   ├── App.jsx              # Main App component with routing
+│   │   └── main.jsx             # React entry point
+│   └── index.html               # HTML template
+├── src/                         # Backend Node.js application
 │   ├── config/
 │   │   ├── swagger.js           # Swagger/OpenAPI configuration
-│   │   └── i18n.js              # Internationalization setup
+│   │   └── i18n.js              # Backend i18n setup
 │   ├── db/
-│   │   └── database.js          # Database initialization and schema
+│   │   └── database.js          # PostgreSQL initialization and schema
 │   ├── middleware/
 │   │   ├── auth.js              # API key authentication
 │   │   ├── adminAuth.js         # Admin authentication
 │   │   ├── userAuth.js          # User authentication
 │   │   └── language.js          # Language detection
 │   ├── routes/
-│   │   ├── auth.js              # API key authentication routes
 │   │   ├── user.js              # User registration and login routes
 │   │   ├── admin.js             # Admin panel routes
-│   │   ├── frontend.js          # Public frontend routes
-│   │   ├── advanced.js          # Advanced functions routes (authenticated)
 │   │   ├── public.js            # Public API routes (no auth required)
 │   │   ├── lastheard.js         # Reserved for future authenticated endpoints
 │   │   └── talkgroups.js        # Reserved for future authenticated endpoints
 │   ├── services/
-│   │   ├── databaseService.js   # Database access layer (new)
+│   │   ├── databaseService.js   # Database access layer
 │   │   ├── emailService.js      # Email sending service
 │   │   ├── schedulerService.js  # Expiry scheduler
 │   │   ├── brandmeisterService.js # Real-time data ingestion
 │   │   └── talkgroupsService.js # Talkgroup data management
 │   ├── utils/
 │   │   └── htmlHelpers.js       # HTML utility functions
-│   └── server.js                # Main application entry point
+│   └── server.js                # Express server (serves React app)
+├── dist/                        # Built React app (generated, not in git)
 ├── locales/                     # Translation files (en, es, de, fr)
-├── data/                        # SQLite database directory
 ├── .github/workflows/           # CI/CD workflows
+├── vite.config.js               # Vite build configuration
 ├── Dockerfile                   # Multi-stage container build
 ├── docker-compose.yml           # Container orchestration
 ├── .env.example                 # Environment variables template

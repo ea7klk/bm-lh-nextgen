@@ -1622,6 +1622,19 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 /**
+ * Get current user info (API endpoint for React)
+ */
+router.get('/api/me', authenticateUser, (req, res) => {
+  const user = req.user;
+  res.json({
+    callsign: user.callsign,
+    name: user.name,
+    email: user.email,
+    locale: user.locale || 'en',
+  });
+});
+
+/**
  * User profile page
  */
 router.get('/profile', authenticateUser, (req, res) => {
