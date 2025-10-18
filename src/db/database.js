@@ -85,44 +85,12 @@ function initDatabase() {
     `);
   }
 
-  // Create index for faster queries
+  // Create indexes for faster queries
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_start ON lastheard(Start DESC);
     CREATE INDEX IF NOT EXISTS idx_source_id ON lastheard(SourceID);
     CREATE INDEX IF NOT EXISTS idx_destination_id ON lastheard(DestinationID);
     CREATE INDEX IF NOT EXISTS idx_source_call ON lastheard(SourceCall);
-  `);
-
-  // Create api_keys table
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS api_keys (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      api_key TEXT UNIQUE NOT NULL,
-      name TEXT NOT NULL,
-      email TEXT NOT NULL,
-      is_active INTEGER DEFAULT 1,
-      created_at INTEGER DEFAULT (strftime('%s', 'now')),
-      expires_at INTEGER
-    )
-  `);
-
-  // Create email_verifications table
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS email_verifications (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT NOT NULL,
-      name TEXT NOT NULL,
-      verification_token TEXT UNIQUE NOT NULL,
-      is_verified INTEGER DEFAULT 0,
-      created_at INTEGER DEFAULT (strftime('%s', 'now')),
-      expires_at INTEGER NOT NULL
-    )
-  `);
-
-  // Create indexes for api_keys and email_verifications
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_api_key ON api_keys(api_key);
-    CREATE INDEX IF NOT EXISTS idx_verification_token ON email_verifications(verification_token);
   `);
 
   // Create talkgroups table
@@ -144,70 +112,6 @@ function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_country ON talkgroups(country);
     CREATE INDEX IF NOT EXISTS idx_continent ON talkgroups(continent);
   `);
-
-  // Migrate existing api_keys table to add expires_at column if it doesn't exist
-  try {
-    const columns = db.pragma('table_info(api_keys)');
-    const hasExpiresAt = columns.some(col => col.name === 'expires_at');
-    
-    if (!hasExpiresAt) {
-      console.log('Migrating api_keys table to add expires_at column...');
-      db.exec(`ALTER TABLE api_keys ADD COLUMN expires_at INTEGER`);
-      
-      // Set expiration date for existing keys (365 days from created_at)
-      db.exec(`
-        UPDATE api_keys 
-        SET expires_at = created_at + (365 * 24 * 60 * 60)
-        WHERE expires_at IS NULL
-      `);
-      
-      console.log('Migration completed successfully');
-    }
-  } catch (error) {
-    console.error('Error during migration:', error);
-  }
-
-  // Migrate existing api_keys table to add last_used_at column if it doesn't exist
-  try {
-    const columns = db.pragma('table_info(api_keys)');
-    const hasLastUsedAt = columns.some(col => col.name === 'last_used_at');
-    
-    if (!hasLastUsedAt) {
-      console.log('Migrating api_keys table to add last_used_at column...');
-      db.exec(`ALTER TABLE api_keys ADD COLUMN last_used_at INTEGER`);
-      console.log('Migration completed successfully');
-    }
-  } catch (error) {
-    console.error('Error during migration:', error);
-  }
-
-  // Migrate existing api_keys table to add locale column if it doesn't exist
-  try {
-    const columns = db.pragma('table_info(api_keys)');
-    const hasLocale = columns.some(col => col.name === 'locale');
-    
-    if (!hasLocale) {
-      console.log('Migrating api_keys table to add locale column...');
-      db.exec(`ALTER TABLE api_keys ADD COLUMN locale TEXT DEFAULT 'en'`);
-      console.log('Migration completed successfully');
-    }
-  } catch (error) {
-    console.error('Error during migration:', error);
-  }
-
-  // Migrate existing email_verifications table to add locale column if it doesn't exist
-  try {
-    const columns = db.pragma('table_info(email_verifications)');
-    const hasLocale = columns.some(col => col.name === 'locale');
-    
-    if (!hasLocale) {
-      console.log('Migrating email_verifications table to add locale column...');
-      db.exec(`ALTER TABLE email_verifications ADD COLUMN locale TEXT DEFAULT 'en'`);
-      console.log('Migration completed successfully');
-    }
-  } catch (error) {
-    console.error('Error during migration:', error);
-  }
 
   // Create users table for user registration
   db.exec(`

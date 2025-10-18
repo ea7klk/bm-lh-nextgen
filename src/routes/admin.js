@@ -202,7 +202,7 @@ router.get('/', (req, res) => {
     <div class="container">
         <div class="header">
             <h1>🔐 Admin Panel</h1>
-            <p class="subtitle">Brandmeister Lastheard Next Generation - API Key Management</p>
+            <p class="subtitle">Brandmeister Lastheard Next Generation - User Management</p>
         </div>
 
         <div id="message" class="message"></div>
@@ -229,51 +229,7 @@ router.get('/', (req, res) => {
             <div id="usersContent" class="loading">Loading...</div>
         </div>
 
-        <div class="section">
-            <h2>
-                API Keys
-                <button class="refresh-btn" onclick="loadApiKeys()">🔄 Refresh</button>
-            </h2>
-            <div class="stats" id="apiKeyStats">
-                <div class="stat-card">
-                    <div class="stat-label">Total Keys</div>
-                    <div class="stat-value" id="totalKeys">-</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Active Keys</div>
-                    <div class="stat-value" id="activeKeys">-</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Inactive Keys</div>
-                    <div class="stat-value" id="inactiveKeys">-</div>
-                </div>
-            </div>
-            <div id="apiKeysContent" class="loading">Loading...</div>
-        </div>
-
-        <div class="section">
-            <h2>
-                Email Verifications
-                <button class="refresh-btn" onclick="loadVerifications()">🔄 Refresh</button>
-            </h2>
-            <div class="stats" id="verificationStats">
-                <div class="stat-card">
-                    <div class="stat-label">Total Verifications</div>
-                    <div class="stat-value" id="totalVerifications">-</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Verified</div>
-                    <div class="stat-value" id="verifiedCount">-</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Pending</div>
-                    <div class="stat-value" id="pendingCount">-</div>
-                </div>
-            </div>
-            <div id="verificationsContent" class="loading">Loading...</div>
-        </div>
-
-        <a href="/" class="back-link">← Back to API Home</a>
+        <a href="/" class="back-link">← Back to Home</a>
     </div>
 
     <script>
@@ -306,144 +262,6 @@ router.get('/', (req, res) => {
                 return '<span style="color: #ffc107;">Expires in ' + daysLeft + ' days</span>';
             } else {
                 return '<span style="color: #28a745;">Expires in ' + daysLeft + ' days</span>';
-            }
-        }
-
-        async function loadApiKeys() {
-            try {
-                const response = await fetch('/admin/api-keys');
-                if (!response.ok) throw new Error('Failed to load API keys');
-                
-                const data = await response.json();
-                
-                // Update stats
-                document.getElementById('totalKeys').textContent = data.length;
-                document.getElementById('activeKeys').textContent = data.filter(k => k.is_active).length;
-                document.getElementById('inactiveKeys').textContent = data.filter(k => !k.is_active).length;
-                
-                const content = document.getElementById('apiKeysContent');
-                
-                if (data.length === 0) {
-                    content.innerHTML = '<div class="empty">No API keys found</div>';
-                    return;
-                }
-                
-                let html = '<table>';
-                html += '<thead><tr>';
-                html += '<th>Name</th>';
-                html += '<th>Email</th>';
-                html += '<th>API Key</th>';
-                html += '<th>Status</th>';
-                html += '<th>Created</th>';
-                html += '<th>Expires</th>';
-                html += '<th>Last Used</th>';
-                html += '<th>Action</th>';
-                html += '</tr></thead><tbody>';
-                
-                data.forEach(key => {
-                    html += '<tr>';
-                    html += '<td>' + escapeHtml(key.name) + '</td>';
-                    html += '<td>' + escapeHtml(key.email) + '</td>';
-                    html += '<td><code>' + escapeHtml(key.api_key) + '</code></td>';
-                    html += '<td><span class="status-' + (key.is_active ? 'active' : 'inactive') + '">' + (key.is_active ? 'Active' : 'Inactive') + '</span></td>';
-                    html += '<td>' + formatDate(key.created_at) + '</td>';
-                    html += '<td>' + formatExpiry(key.expires_at) + '</td>';
-                    html += '<td>' + formatDate(key.last_used_at) + '</td>';
-                    html += '<td><button class="delete-btn" onclick="deleteApiKey(' + key.id + ')">Delete</button></td>';
-                    html += '</tr>';
-                });
-                
-                html += '</tbody></table>';
-                content.innerHTML = html;
-            } catch (error) {
-                console.error('Error loading API keys:', error);
-                document.getElementById('apiKeysContent').innerHTML = '<div class="error">Error loading API keys</div>';
-            }
-        }
-
-        async function loadVerifications() {
-            try {
-                const response = await fetch('/admin/verifications');
-                if (!response.ok) throw new Error('Failed to load verifications');
-                
-                const data = await response.json();
-                
-                // Update stats
-                document.getElementById('totalVerifications').textContent = data.length;
-                document.getElementById('verifiedCount').textContent = data.filter(v => v.is_verified).length;
-                document.getElementById('pendingCount').textContent = data.filter(v => !v.is_verified).length;
-                
-                const content = document.getElementById('verificationsContent');
-                
-                if (data.length === 0) {
-                    content.innerHTML = '<div class="empty">No email verifications found</div>';
-                    return;
-                }
-                
-                let html = '<table>';
-                html += '<thead><tr>';
-                html += '<th>Name</th>';
-                html += '<th>Email</th>';
-                html += '<th>Token</th>';
-                html += '<th>Status</th>';
-                html += '<th>Created</th>';
-                html += '<th>Expires</th>';
-                html += '<th>Action</th>';
-                html += '</tr></thead><tbody>';
-                
-                data.forEach(verification => {
-                    html += '<tr>';
-                    html += '<td>' + escapeHtml(verification.name) + '</td>';
-                    html += '<td>' + escapeHtml(verification.email) + '</td>';
-                    html += '<td><code>' + escapeHtml(verification.verification_token) + '</code></td>';
-                    html += '<td><span class="status-' + (verification.is_verified ? 'verified' : 'pending') + '">' + (verification.is_verified ? 'Verified' : 'Pending') + '</span></td>';
-                    html += '<td>' + formatDate(verification.created_at) + '</td>';
-                    html += '<td>' + formatDate(verification.expires_at) + '</td>';
-                    html += '<td><button class="delete-btn" onclick="deleteVerification(' + verification.id + ')">Delete</button></td>';
-                    html += '</tr>';
-                });
-                
-                html += '</tbody></table>';
-                content.innerHTML = html;
-            } catch (error) {
-                console.error('Error loading verifications:', error);
-                document.getElementById('verificationsContent').innerHTML = '<div class="error">Error loading verifications</div>';
-            }
-        }
-
-        async function deleteApiKey(id) {
-            if (!confirm('Are you sure you want to delete this API key?')) return;
-            
-            try {
-                const response = await fetch('/admin/api-keys/' + id, {
-                    method: 'DELETE'
-                });
-                
-                if (!response.ok) throw new Error('Failed to delete API key');
-                
-                showMessage('API key deleted successfully', 'success');
-                loadApiKeys();
-            } catch (error) {
-                console.error('Error deleting API key:', error);
-                showMessage('Failed to delete API key', 'error');
-            }
-        }
-
-        async function deleteVerification(id) {
-            if (!confirm('Are you sure you want to delete this verification?')) return;
-            
-            try {
-                const response = await fetch('/admin/verifications/' + id, {
-                    method: 'DELETE'
-                });
-                
-                if (!response.ok) throw new Error('Failed to delete verification');
-                
-                showMessage('Verification deleted successfully', 'success');
-                loadVerifications();
-            } catch (error) {
-                console.error('Error deleting verification:', error);
-                showMessage('Failed to delete verification', 'error');
             }
         }
 
@@ -558,80 +376,10 @@ router.get('/', (req, res) => {
 
         // Load data on page load
         loadUsers();
-        loadApiKeys();
-        loadVerifications();
     </script>
 </body>
 </html>
   `);
-});
-
-/**
- * Get all API keys
- */
-router.get('/api-keys', (req, res) => {
-  try {
-    const stmt = db.prepare('SELECT * FROM api_keys ORDER BY created_at DESC');
-    const keys = stmt.all();
-    res.json(keys);
-  } catch (error) {
-    console.error('Error fetching API keys:', error);
-    res.status(500).json({ error: 'Failed to fetch API keys' });
-  }
-});
-
-/**
- * Get all email verifications
- */
-router.get('/verifications', (req, res) => {
-  try {
-    const stmt = db.prepare('SELECT * FROM email_verifications ORDER BY created_at DESC');
-    const verifications = stmt.all();
-    res.json(verifications);
-  } catch (error) {
-    console.error('Error fetching verifications:', error);
-    res.status(500).json({ error: 'Failed to fetch verifications' });
-  }
-});
-
-/**
- * Delete an API key
- */
-router.delete('/api-keys/:id', (req, res) => {
-  try {
-    const { id } = req.params;
-    const stmt = db.prepare('DELETE FROM api_keys WHERE id = ?');
-    const result = stmt.run(id);
-    
-    if (result.changes === 0) {
-      return res.status(404).json({ error: 'API key not found' });
-    }
-    
-    res.json({ message: 'API key deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting API key:', error);
-    res.status(500).json({ error: 'Failed to delete API key' });
-  }
-});
-
-/**
- * Delete an email verification
- */
-router.delete('/verifications/:id', (req, res) => {
-  try {
-    const { id } = req.params;
-    const stmt = db.prepare('DELETE FROM email_verifications WHERE id = ?');
-    const result = stmt.run(id);
-    
-    if (result.changes === 0) {
-      return res.status(404).json({ error: 'Verification not found' });
-    }
-    
-    res.json({ message: 'Verification deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting verification:', error);
-    res.status(500).json({ error: 'Failed to delete verification' });
-  }
 });
 
 /**

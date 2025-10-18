@@ -15,9 +15,7 @@ A production-ready Node.js REST API with real-time web interface for tracking Br
 ### API & Backend
 - **RESTful API** - Built with Express.js and comprehensive Swagger documentation
 - **SQLite Database** - Local data storage with efficient querying
-- **API Key Authentication** - Email verification with 365-day expiration
-- **Professional Email System** - Styled HTML templates for verification and notifications
-- **Automated Reminders** - Expiry notifications at 30, 15, and 5 days
+- **User Authentication** - Secure registration and login system
 - **Smart Filtering** - Automatic exclusion of Local talkgroup (ID 9)
 
 ### DevOps & Security
@@ -157,7 +155,7 @@ Visit `http://localhost:3000` to access the modern web interface:
 
 #### Public Endpoints (No Authentication Required)
 
-All data endpoints are now publicly accessible without authentication:
+All data endpoints are publicly accessible without authentication:
 
 - `GET /public/lastheard` - Recent lastheard entries (with filtering)
 - `GET /public/lastheard/grouped` - Grouped data by talkgroup
@@ -172,31 +170,14 @@ All data endpoints are now publicly accessible without authentication:
 curl http://localhost:3000/public/lastheard?callsign=EA7KLK&limit=10
 ```
 
-#### API Key System (Reserved for Future Use)
-
-The API key authentication system is available for future authenticated features:
-
-1. **Request Key**: Visit `http://localhost:3000/api/auth/request-key`
-2. **Check Email**: Click the verification link sent to your email
-3. **Receive Key**: Your API key will be displayed and emailed to you
-4. **Future Use**: API keys will be used for authenticated features when they are added
-
-**API Key Features:**
-- 365-day validity period
-- Automatic expiry reminders (30, 15, 5 days before)
-- Automatic cleanup of expired keys
-- Last usage tracking
-- Ready for future authenticated endpoints
-
 ### Admin Panel
 
-Access the password-protected admin panel at `/admin` to manage API keys and verifications.
+Access the password-protected admin panel at `/admin` to manage users.
 
 **Features:**
-- View all API keys with status, dates, and usage
-- Delete API keys
-- View email verifications (verified and pending)
-- Delete old verification records
+- View all registered users with status and activity
+- Activate/deactivate users
+- Delete user accounts
 - Real-time statistics dashboard
 
 **Access:**
@@ -240,9 +221,6 @@ The following endpoints are publicly accessible without authentication:
 - `GET /health` - Health check endpoint (always available)
 
 ### Authentication & User Management
-- `GET /api/auth/request-key` - API key request form
-- `POST /api/auth/request-key` - Submit API key request
-- `GET /api/auth/verify-email?token=<token>` - Verify email and receive key
 - `GET /user/register` - User registration form
 - `POST /user/register` - Submit user registration
 - `GET /user/login` - User login form
@@ -254,13 +232,9 @@ The following endpoints are publicly accessible without authentication:
 
 ### Admin (Password Protected)
 - `GET /admin` - Admin panel interface
-- `GET /admin/api-keys` - List all API keys
-- `DELETE /admin/api-keys/:id` - Delete an API key
 - `GET /admin/users` - List all users
 - `PUT /admin/users/:id/status` - Update user status
 - `DELETE /admin/users/:id` - Delete a user
-- `GET /admin/verifications` - List all email verifications
-- `DELETE /admin/verifications/:id` - Delete a verification
 
 ## 💾 Database
 
@@ -273,11 +247,7 @@ SQLite database automatically created at `data/lastheard.db` on first run.
 - `DestinationCall`, `DestinationName`, `Start`, `Stop`
 - `TalkerAlias`, `duration`, `created_at`
 
-**api_keys** - API authentication
-- `id`, `api_key` (UUID), `name`, `email`, `is_active`
-- `created_at`, `expires_at` (365 days), `last_used_at`
-
-**email_verifications** - Email verification tracking
+**talkgroups** - Talkgroup information
 - `id`, `email`, `name`, `verification_token` (UUID)
 - `is_verified`, `created_at`, `expires_at`
 
