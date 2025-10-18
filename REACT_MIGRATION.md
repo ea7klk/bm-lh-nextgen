@@ -86,15 +86,15 @@ src/
 ```json
 {
   "dependencies": {
-    "react": "^18.x",
-    "react-dom": "^18.x",
-    "react-router-dom": "^6.x",
-    "i18next": "^23.x",
-    "react-i18next": "^14.x"
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.4",
+    "i18next": "^25.6.0",
+    "react-i18next": "^16.1.0"
   },
   "devDependencies": {
-    "vite": "^7.x",
-    "@vitejs/plugin-react": "^4.x"
+    "vite": "^7.1.10",
+    "@vitejs/plugin-react": "^5.0.4"
   }
 }
 ```
