@@ -805,9 +805,9 @@ async function sendBroadcastEmail(subject, message) {
     const emailsSent = [];
     const emailsFailed = [];
 
-    // Send emails sequentially to avoid hitting email provider rate limits
-    // For large user bases, consider implementing a queue-based system
-    // with configurable batch sizes and delays
+    // Send emails sequentially with a small delay to avoid hitting email provider rate limits
+    // A 100ms delay provides a balance between speed and reliability
+    // For large user bases (>1000), consider implementing a queue-based system
     for (const user of users) {
       const locale = user.locale || 'en';
       i18n.setLocale(locale);
@@ -889,6 +889,11 @@ ${i18n.__('email.automatedEmail')}
         await transporter.sendMail(mailOptions);
         emailsSent.push(user.email);
         console.log(`Broadcast email sent to ${user.email}`);
+        
+        // Add a small delay between emails to help with rate limiting
+        if (users.indexOf(user) < users.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
       } catch (error) {
         console.error(`Error sending broadcast email to ${user.email}:`, error.message);
         emailsFailed.push({ email: user.email, error: error.message });
