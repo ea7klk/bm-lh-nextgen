@@ -53,7 +53,7 @@ const { LastheardService, TalkgroupService } = require('../services/databaseServ
  * Get grouped lastheard data by talkgroup
  * Groups lastheard entries by talkgroup and returns aggregated statistics
  */
-router.get('/lastheard/grouped', (req, res) => {
+router.get('/lastheard/grouped', async (req, res) => {
   try {
     const timeRange = req.query.timeRange || '5m';
     const continent = req.query.continent;
@@ -76,7 +76,7 @@ router.get('/lastheard/grouped', (req, res) => {
     const startTime = now - (timeMap[timeRange] || timeMap['5m']);
     
     // Use database service to get grouped data
-    const entries = LastheardService.getGroupedByTalkgroup({
+    const entries = await LastheardService.getGroupedByTalkgroup({
       startTime,
       limit,
       continent,
@@ -129,14 +129,14 @@ router.get('/lastheard/grouped', (req, res) => {
  * Get recent lastheard entries with optional filtering
  * Public endpoint - no authentication required
  */
-router.get('/lastheard', (req, res) => {
+router.get('/lastheard', async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 50, 100);
     const callsign = req.query.callsign;
     const talkgroup = req.query.talkgroup;
     
     // Use database service to get entries
-    const entries = LastheardService.getEntries({
+    const entries = await LastheardService.getEntries({
       limit,
       callsign,
       talkgroup: talkgroup ? parseInt(talkgroup) : null
@@ -164,9 +164,9 @@ router.get('/lastheard', (req, res) => {
  * Get statistics about lastheard data
  * Returns aggregated statistics for display
  */
-router.get('/stats', (req, res) => {
+router.get('/stats', async (req, res) => {
   try {
-    const stats = LastheardService.getStatistics();
+    const stats = await LastheardService.getStatistics();
     res.json(stats);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -189,9 +189,9 @@ router.get('/stats', (req, res) => {
  * Get list of unique continents from talkgroups
  * Used for filtering in the frontend
  */
-router.get('/continents', (req, res) => {
+router.get('/continents', async (req, res) => {
   try {
-    const continents = TalkgroupService.getContinents();
+    const continents = await TalkgroupService.getContinents();
     res.json(continents);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -221,10 +221,10 @@ router.get('/continents', (req, res) => {
  * Get list of countries for a specific continent
  * Used for filtering in the frontend
  */
-router.get('/countries', (req, res) => {
+router.get('/countries', async (req, res) => {
   try {
     const continent = req.query.continent;
-    const countries = TalkgroupService.getCountriesByContinent(continent);
+    const countries = await TalkgroupService.getCountriesByContinent(continent);
     res.json(countries);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -259,12 +259,12 @@ router.get('/countries', (req, res) => {
  * Get list of talkgroups for a specific continent and country
  * Used for filtering in the advanced functions page
  */
-router.get('/talkgroups', (req, res) => {
+router.get('/talkgroups', async (req, res) => {
   try {
     const continent = req.query.continent;
     const country = req.query.country;
     
-    const talkgroups = TalkgroupService.getTalkgroups({ continent, country });
+    const talkgroups = await TalkgroupService.getTalkgroups({ continent, country });
     res.json(talkgroups);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -327,7 +327,7 @@ router.get('/talkgroups', (req, res) => {
  * Get grouped lastheard data by callsign
  * Groups lastheard entries by callsign and returns aggregated statistics
  */
-router.get('/lastheard/callsigns', (req, res) => {
+router.get('/lastheard/callsigns', async (req, res) => {
   try {
     const timeRange = req.query.timeRange || '5m';
     const callsignFilter = req.query.callsign;
@@ -351,7 +351,7 @@ router.get('/lastheard/callsigns', (req, res) => {
     const startTime = now - (timeMap[timeRange] || timeMap['5m']);
     
     // Use database service to get grouped data
-    const entries = LastheardService.getGroupedByCallsign({
+    const entries = await LastheardService.getGroupedByCallsign({
       startTime,
       limit,
       callsign: callsignFilter,
