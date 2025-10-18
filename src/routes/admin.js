@@ -27,9 +27,9 @@ router.get('/stats', async (req, res) => {
     const uniqueCallsigns = await pool.query('SELECT COUNT(DISTINCT "SourceCall") as count FROM lastheard WHERE "DestinationID" != 9');
     
     res.json({
-      totalRecords: parseInt(totalRecords.rows[0].count),
-      uniqueTalkgroups: parseInt(uniqueTalkgroups.rows[0].count),
-      uniqueCallsigns: parseInt(uniqueCallsigns.rows[0].count)
+      totalRecords: parseInt(totalRecords.rows[0].count, 10),
+      uniqueTalkgroups: parseInt(uniqueTalkgroups.rows[0].count, 10),
+      uniqueCallsigns: parseInt(uniqueCallsigns.rows[0].count, 10)
     });
   } catch (error) {
     console.error('Error fetching stats:', error);
@@ -107,8 +107,8 @@ router.get('/users/:id', async (req, res) => {
     
     const user = result.rows[0];
     // Convert BIGINT timestamp strings to numbers for proper JavaScript handling
-    user.created_at = user.created_at ? parseInt(user.created_at) : null;
-    user.last_login_at = user.last_login_at ? parseInt(user.last_login_at) : null;
+    user.created_at = user.created_at ? parseInt(user.created_at, 10) : null;
+    user.last_login_at = user.last_login_at ? parseInt(user.last_login_at, 10) : null;
     
     res.json(user);
   } catch (error) {
@@ -1020,8 +1020,8 @@ router.get('/users', async (req, res) => {
     // Convert BIGINT timestamp strings to numbers for proper JavaScript handling
     const users = result.rows.map(user => ({
       ...user,
-      created_at: user.created_at ? parseInt(user.created_at) : null,
-      last_login_at: user.last_login_at ? parseInt(user.last_login_at) : null
+      created_at: user.created_at ? parseInt(user.created_at, 10) : null,
+      last_login_at: user.last_login_at ? parseInt(user.last_login_at, 10) : null
     }));
     res.json(users);
   } catch (error) {
