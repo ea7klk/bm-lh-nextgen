@@ -60,7 +60,7 @@ async function initializeTalkgroups() {
       const updateResult = await updateTalkgroups();
       
       if (updateResult.success) {
-        console.log(`Initial talkgroups population completed. Added ${updateResult.count} records.`);
+        console.log(`Initial talkgroups population completed. Added ${updateResult.readFromSource} records (${updateResult.added} new, ${updateResult.updated} updated).`);
       } else {
         console.error('Failed to populate talkgroups on startup:', updateResult.error);
       }
@@ -130,7 +130,7 @@ async function runTalkgroupsUpdate() {
   try {
     const result = await updateTalkgroups();
     if (result.success) {
-      console.log(`Talkgroups update completed successfully. Updated ${result.count} records.`);
+      console.log(`Talkgroups update completed successfully. Read ${result.readFromSource}, added ${result.added}, updated ${result.updated}. Total: ${result.totalBefore} → ${result.totalAfter}`);
     } else {
       console.error('Talkgroups update failed:', result.error);
     }

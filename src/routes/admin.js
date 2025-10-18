@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db/database');
 const { authenticateAdmin } = require('../middleware/adminAuth');
+const { updateTalkgroups } = require('../services/talkgroupsService');
 
 // Apply admin authentication to all routes
 router.use(authenticateAdmin);
@@ -51,6 +52,38 @@ router.post('/expunge', async (req, res) => {
   } catch (error) {
     console.error('Error expunging records:', error);
     res.status(500).json({ error: 'Failed to expunge records' });
+  }
+});
+
+/**
+ * Update talkgroups from Brandmeister (Admin only)
+ */
+router.post('/update-talkgroups', async (req, res) => {
+  try {
+    console.log('Manual talkgroups update triggered by admin');
+    const result = await updateTalkgroups();
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        readFromSource: result.readFromSource,
+        added: result.added,
+        updated: result.updated,
+        totalBefore: result.totalBefore,
+        totalAfter: result.totalAfter
+      });
+    } else {
+      res.status(500).json({ 
+        success: false, 
+        error: result.error || 'Failed to update talkgroups' 
+      });
+    }
+  } catch (error) {
+    console.error('Error updating talkgroups:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || 'Failed to update talkgroups' 
+    });
   }
 });
 
@@ -449,9 +482,34 @@ router.get('/', async (req, res) => {
             <button class="expunge-btn" onclick="expungeOldRecords()" id="expungeBtn">
                 Expunge Records Older Than 7 Days
             </button>
+            <p style="color: #666; margin: 30px 0 20px 0;">
+                Update talkgroups database from Brandmeister API. This process runs automatically at 02:00 AM daily.
+            </p>
+            <button class="expunge-btn" style="background: #28a745;" onclick="updateTalkgroups()" id="updateTgBtn">
+                Update BM TGs
+            </button>
         </div>
 
         <a href="/" class="back-link">← Back to Home</a>
+    </div>
+
+    <!-- Update Talkgroups Modal -->
+    <div id="updateTgModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Update Talkgroups</h2>
+                <span class="close" onclick="closeUpdateTgModal()" id="updateTgClose" style="display: none;">&times;</span>
+            </div>
+            <div id="updateTgContent">
+                <div class="loading">
+                    <p>Talkgroup update process running...</p>
+                    <p style="color: #999; margin-top: 10px;">This may take a few moments.</p>
+                </div>
+            </div>
+            <div class="form-actions" id="updateTgActions" style="display: none;">
+                <button type="button" class="btn-primary" onclick="closeUpdateTgModal()">Close</button>
+            </div>
+        </div>
     </div>
 
     <!-- Edit User Modal -->
@@ -696,11 +754,106 @@ router.get('/', async (req, res) => {
             }
         }
 
+        async function updateTalkgroups() {
+            // Show modal
+            const modal = document.getElementById('updateTgModal');
+            modal.style.display = 'block';
+            
+            // Reset content to loading state
+            document.getElementById('updateTgContent').innerHTML = 
+                '<div class="loading">' +
+                    '<p>Talkgroup update process running...</p>' +
+                    '<p style="color: #999; margin-top: 10px;">This may take a few moments.</p>' +
+                '</div>';
+            document.getElementById('updateTgActions').style.display = 'none';
+            document.getElementById('updateTgClose').style.display = 'none';
+            
+            const btn = document.getElementById('updateTgBtn');
+            btn.disabled = true;
+            btn.textContent = 'Updating...';
+            
+            try {
+                const response = await fetch('/admin/update-talkgroups', {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) throw new Error('Failed to update talkgroups');
+                
+                const data = await response.json();
+                
+                // Show success results
+                if (data.success) {
+                    const readFromSource = (data.readFromSource || 0).toLocaleString();
+                    const added = (data.added || 0).toLocaleString();
+                    const updated = (data.updated || 0).toLocaleString();
+                    const totalBefore = (data.totalBefore || 0).toLocaleString();
+                    const totalAfter = (data.totalAfter || 0).toLocaleString();
+                    
+                    document.getElementById('updateTgContent').innerHTML = 
+                        '<div style="padding: 20px 0;">' +
+                            '<div class="message success" style="display: block; margin-bottom: 20px;">' +
+                                'Talkgroup update completed successfully!' +
+                            '</div>' +
+                            '<div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 10px;">' +
+                                '<strong>📊 Update Statistics:</strong>' +
+                            '</div>' +
+                            '<table style="width: 100%; margin-top: 10px;">' +
+                                '<tr>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>Read from source:</strong></td>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right;">' + readFromSource + '</td>' +
+                                '</tr>' +
+                                '<tr>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>Added to database:</strong></td>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right; color: #28a745;">' + added + '</td>' +
+                                '</tr>' +
+                                '<tr>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>Updated in database:</strong></td>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right; color: #667eea;">' + updated + '</td>' +
+                                '</tr>' +
+                                '<tr>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>Total before update:</strong></td>' +
+                                    '<td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right;">' + totalBefore + '</td>' +
+                                '</tr>' +
+                                '<tr>' +
+                                    '<td style="padding: 10px;"><strong>Total after update:</strong></td>' +
+                                    '<td style="padding: 10px; text-align: right; font-weight: 600;">' + totalAfter + '</td>' +
+                                '</tr>' +
+                            '</table>' +
+                        '</div>';
+                    document.getElementById('updateTgActions').style.display = 'flex';
+                    document.getElementById('updateTgClose').style.display = 'block';
+                    showMessage('Talkgroups updated successfully', 'success');
+                } else {
+                    throw new Error(data.error || 'Update failed');
+                }
+            } catch (error) {
+                console.error('Error updating talkgroups:', error);
+                document.getElementById('updateTgContent').innerHTML = 
+                    '<div class="message error" style="display: block;">' +
+                        'Failed to update talkgroups: ' + error.message +
+                    '</div>';
+                document.getElementById('updateTgActions').style.display = 'flex';
+                document.getElementById('updateTgClose').style.display = 'block';
+                showMessage('Failed to update talkgroups', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Update BM TGs';
+            }
+        }
+
+        function closeUpdateTgModal() {
+            document.getElementById('updateTgModal').style.display = 'none';
+        }
+
         // Close modal when clicking outside
         window.onclick = function(event) {
-            const modal = document.getElementById('editUserModal');
-            if (event.target == modal) {
+            const editModal = document.getElementById('editUserModal');
+            const updateTgModal = document.getElementById('updateTgModal');
+            if (event.target == editModal) {
                 closeEditModal();
+            }
+            if (event.target == updateTgModal) {
+                closeUpdateTgModal();
             }
         }
 

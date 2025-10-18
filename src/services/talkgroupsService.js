@@ -462,6 +462,10 @@ async function updateTalkgroups() {
   console.log('Updating talkgroups from Brandmeister...');
 
   try {
+    // Get count before update
+    const beforeResult = await pool.query('SELECT COUNT(*) as count FROM talkgroups WHERE talkgroup_id != 9');
+    const countBefore = parseInt(beforeResult.rows[0].count);
+
     // Fetch talkgroups data from Brandmeister JSON API
     const jsonUrl = 'https://api.brandmeister.network/v2/talkgroup';
     
@@ -490,6 +494,10 @@ async function updateTalkgroups() {
     }
 
     console.log(`Parsed ${records.length} talkgroups from JSON API`);
+
+    // Track statistics
+    let addedCount = 0;
+    let updatedCount = 0;
 
     // Use PostgreSQL transaction for better performance
     const client = await pool.connect();
@@ -741,6 +749,13 @@ async function updateTalkgroups() {
         const continent = COUNTRY_TO_CONTINENT[country] || 
                          (country === 'Global' ? 'Global' : null);
 
+        // Check if talkgroup exists before inserting
+        const existsResult = await client.query(
+          'SELECT talkgroup_id FROM talkgroups WHERE talkgroup_id = $1',
+          [talkgroupId]
+        );
+        const exists = existsResult.rows.length > 0;
+
         await client.query(`
           INSERT INTO talkgroups (
             talkgroup_id, name, country, continent, full_country_name, last_updated
@@ -753,11 +768,29 @@ async function updateTalkgroups() {
             full_country_name = EXCLUDED.full_country_name,
             last_updated = EXTRACT(EPOCH FROM NOW())
         `, [talkgroupId, name, country, continent, fullCountryName]);
+
+        // Track statistics
+        if (exists) {
+          updatedCount++;
+        } else {
+          addedCount++;
+        }
       }
+
+      // Get count after update
+      const afterResult = await client.query('SELECT COUNT(*) as count FROM talkgroups WHERE talkgroup_id != 9');
+      const countAfter = parseInt(afterResult.rows[0].count);
 
       await client.query('COMMIT');
       console.log('Talkgroups updated successfully');
-      return { success: true, count: records.length };
+      return { 
+        success: true, 
+        readFromSource: records.length,
+        added: addedCount,
+        updated: updatedCount,
+        totalBefore: countBefore,
+        totalAfter: countAfter
+      };
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
