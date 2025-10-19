@@ -4,6 +4,7 @@ const { pool } = require('../db/database');
 const { authenticateAdmin } = require('../middleware/adminAuth');
 const { updateTalkgroups } = require('../services/talkgroupsService');
 const { sendBulkEmail } = require('../services/emailService');
+const { generateMatomoScript } = require('../utils/htmlHelpers');
 
 // Apply admin authentication to all routes
 router.use(authenticateAdmin);
@@ -181,6 +182,7 @@ router.get('/', async (req, res) => {
     <!-- Quill.js Rich Text Editor -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    ${generateMatomoScript()}
     <style>
         * {
             margin: 0;

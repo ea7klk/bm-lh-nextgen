@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateUser } = require('../middleware/userAuth');
-const { generateLanguageSelector } = require('../utils/htmlHelpers');
+const { generateLanguageSelector, generateMatomoScript } = require('../utils/htmlHelpers');
 
 /**
  * Advanced functions page - requires authentication
@@ -413,6 +413,7 @@ router.get('/', authenticateUser, (req, res) => {
             }
         }
     </style>
+    ${generateMatomoScript()}
 </head>
 <body>
     <div class="container">

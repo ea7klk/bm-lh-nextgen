@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { generateLanguageSelector } = require('../utils/htmlHelpers');
+const { generateLanguageSelector, generateMatomoScript } = require('../utils/htmlHelpers');
 const { optionalAuthentication } = require('../middleware/userAuth');
 
 /**
@@ -341,6 +341,7 @@ router.get('/', optionalAuthentication, (req, res) => {
             }
         }
     </style>
+    ${generateMatomoScript()}
 </head>
 <body>
     <div class="container">
