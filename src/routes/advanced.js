@@ -439,6 +439,11 @@ router.get('/', authenticateUser, (req, res) => {
                     <option value="6h">${__('home.last6hours')}</option>
                     <option value="12h">${__('home.last12hours')}</option>
                     <option value="24h">${__('home.last24hours')}</option>
+                    <option value="2d">${__('home.last2days')}</option>
+                    <option value="5d">${__('home.last5days')}</option>
+                    <option value="1w">${__('home.lastWeek')}</option>
+                    <option value="2w">${__('home.last2weeks')}</option>
+                    <option value="1M">${__('home.lastMonth')}</option>
                 </select>
             </div>
             <div class="control-group">
