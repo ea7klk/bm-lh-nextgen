@@ -15,7 +15,7 @@ const { LastheardService, TalkgroupService } = require('../services/databaseServ
  *         name: timeRange
  *         schema:
  *           type: string
- *           enum: [5m, 15m, 30m, 1h, 2h, 6h, 12h, 24h]
+ *           enum: [5m, 15m, 30m, 1h, 2h, 6h, 12h, 24h, 2d, 5d, 1w, 2w, 1M]
  *           default: 5m
  *         description: Time range for data aggregation
  *       - in: query
@@ -71,7 +71,12 @@ router.get('/lastheard/grouped', async (req, res) => {
       '2h': 2 * 60 * 60,
       '6h': 6 * 60 * 60,
       '12h': 12 * 60 * 60,
-      '24h': 24 * 60 * 60
+      '24h': 24 * 60 * 60,
+      '2d': 2 * 24 * 60 * 60,
+      '5d': 5 * 24 * 60 * 60,
+      '1w': 7 * 24 * 60 * 60,
+      '2w': 14 * 24 * 60 * 60,
+      '1M': 30 * 24 * 60 * 60
     };
     const startTime = now - (timeMap[timeRange] || timeMap['5m']);
     
@@ -284,7 +289,7 @@ router.get('/talkgroups', async (req, res) => {
  *         name: timeRange
  *         schema:
  *           type: string
- *           enum: [5m, 15m, 30m, 1h, 2h, 6h, 12h, 24h]
+ *           enum: [5m, 15m, 30m, 1h, 2h, 6h, 12h, 24h, 2d, 5d, 1w, 2w, 1M]
  *           default: 5m
  *         description: Time range for data aggregation
  *       - in: query
@@ -346,7 +351,12 @@ router.get('/lastheard/callsigns', async (req, res) => {
       '2h': 2 * 60 * 60,
       '6h': 6 * 60 * 60,
       '12h': 12 * 60 * 60,
-      '24h': 24 * 60 * 60
+      '24h': 24 * 60 * 60,
+      '2d': 2 * 24 * 60 * 60,
+      '5d': 5 * 24 * 60 * 60,
+      '1w': 7 * 24 * 60 * 60,
+      '2w': 14 * 24 * 60 * 60,
+      '1M': 30 * 24 * 60 * 60
     };
     const startTime = now - (timeMap[timeRange] || timeMap['5m']);
     
