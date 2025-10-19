@@ -783,11 +783,53 @@ ${i18n.__('email.automatedEmail')}
   }
 }
 
+// Send bulk email to multiple users
+async function sendBulkEmail(users, subject, htmlContent, plainContent) {
+  const results = {
+    successful: 0,
+    failed: 0,
+    errors: []
+  };
+  
+  for (const user of users) {
+    try {
+      const transporter = createTransporter();
+      
+      // Set i18n locale for this user
+      i18n.setLocale(user.locale || 'en');
+      
+      const mailOptions = {
+        from: EMAIL_FROM,
+        to: user.email,
+        subject: subject,
+        html: htmlContent,
+        text: plainContent
+      };
+      
+      await transporter.sendMail(mailOptions);
+      results.successful++;
+      
+      console.log(`✅ Bulk email sent to ${user.email}`);
+    } catch (error) {
+      console.error(`❌ Failed to send bulk email to ${user.email}:`, error.message);
+      results.failed++;
+      results.errors.push({
+        email: user.email,
+        error: error.message
+      });
+    }
+  }
+  
+  console.log(`📧 Bulk email completed: ${results.successful} successful, ${results.failed} failed`);
+  return results;
+}
+
 module.exports = {
   sendVerificationEmail,
   sendApiKeyEmail,
   sendExpiryReminderEmail,
   sendPasswordResetEmail,
   sendEmailChangeVerificationEmail,
+  sendBulkEmail,
   testEmailConfig,
 };

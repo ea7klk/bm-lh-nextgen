@@ -3,6 +3,7 @@ const router = express.Router();
 const { pool } = require('../db/database');
 const { authenticateAdmin } = require('../middleware/adminAuth');
 const { updateTalkgroups } = require('../services/talkgroupsService');
+const { sendBulkEmail } = require('../services/emailService');
 
 // Apply admin authentication to all routes
 router.use(authenticateAdmin);
@@ -88,6 +89,42 @@ router.post('/update-talkgroups', async (req, res) => {
 });
 
 /**
+ * Send email to all users (Admin only)
+ */
+router.post('/send-email-to-all', async (req, res) => {
+  try {
+    const { subject, htmlContent, plainContent } = req.body;
+    
+    if (!subject || !htmlContent || !plainContent) {
+      return res.status(400).json({ error: 'Subject and content are required' });
+    }
+    
+    // Get all active users with their emails
+    const usersQuery = await pool.query(`
+      SELECT email, name, locale FROM users 
+      WHERE is_active = true AND email IS NOT NULL
+    `);
+    
+    if (usersQuery.rows.length === 0) {
+      return res.status(400).json({ error: 'No active users found' });
+    }
+    
+    // Send emails
+    const results = await sendBulkEmail(usersQuery.rows, subject, htmlContent, plainContent);
+    
+    res.json({
+      success: true,
+      sentCount: results.successful,
+      failedCount: results.failed,
+      totalUsers: usersQuery.rows.length
+    });
+  } catch (error) {
+    console.error('Error sending bulk email:', error);
+    res.status(500).json({ error: 'Failed to send emails' });
+  }
+});
+
+/**
  * Get user by ID for editing (Admin only)
  */
 router.get('/users/:id', async (req, res) => {
@@ -141,6 +178,9 @@ router.get('/', async (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Brandmeister Lastheard Next Generation</title>
+    <!-- Quill.js Rich Text Editor -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -423,6 +463,26 @@ router.get('/', async (req, res) => {
         .btn-secondary:hover {
             background: #5a6268;
         }
+        /* Rich text editor styling */
+        #emailEditor {
+            background: white;
+        }
+        .ql-toolbar {
+            border-top: 1px solid #ccc !important;
+            border-left: 1px solid #ccc !important;
+            border-right: 1px solid #ccc !important;
+            border-bottom: none !important;
+        }
+        .ql-container {
+            border-bottom: 1px solid #ccc !important;
+            border-left: 1px solid #ccc !important;
+            border-right: 1px solid #ccc !important;
+            border-top: none !important;
+        }
+        .ql-editor {
+            min-height: 150px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
     </style>
 </head>
 <body>
@@ -488,6 +548,31 @@ router.get('/', async (req, res) => {
             <button class="expunge-btn" style="background: #28a745;" onclick="updateTalkgroups()" id="updateTgBtn">
                 Update BM TGs
             </button>
+        </div>
+
+        <div class="section">
+            <h2>📧 Send Email to All Users</h2>
+            <p style="color: #666; margin-bottom: 20px;">
+                Send an announcement or newsletter to all registered users. The email will be sent in both HTML and plain text formats.
+            </p>
+            <form id="emailForm" onsubmit="sendEmailToAllUsers(event)">
+                <div style="margin-bottom: 15px;">
+                    <label for="emailSubject" style="display: block; margin-bottom: 5px; font-weight: 600;">Subject:</label>
+                    <input type="text" id="emailSubject" required 
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label for="emailContent" style="display: block; margin-bottom: 5px; font-weight: 600;">Message:</label>
+                    <div id="emailEditor" style="border: 1px solid #ddd; border-radius: 6px; min-height: 200px;"></div>
+                    <textarea id="emailContent" name="content" style="display: none;" required></textarea>
+                    <small style="color: #666; margin-top: 5px; display: block;">
+                        The email will be sent in both HTML format and automatically converted to plain text for compatibility.
+                    </small>
+                </div>
+                <button type="submit" id="sendEmailBtn" class="expunge-btn" style="background: #17a2b8;">
+                    📧 Send Email to All Users
+                </button>
+            </form>
         </div>
 
         <a href="/" class="back-link">← Back to Home</a>
@@ -895,6 +980,85 @@ router.get('/', async (req, res) => {
             } catch (error) {
                 console.error('Error deleting user:', error);
                 showMessage('Failed to delete user', 'error');
+            }
+        }
+
+        // Initialize rich text editor
+        let quill;
+        document.addEventListener('DOMContentLoaded', function() {
+            quill = new Quill('#emailEditor', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['link'],
+                        ['clean']
+                    ]
+                },
+                placeholder: 'Compose your message to all users...'
+            });
+            
+            // Update hidden textarea when quill content changes
+            quill.on('text-change', function() {
+                document.getElementById('emailContent').value = quill.root.innerHTML;
+            });
+        });
+
+        async function sendEmailToAllUsers(event) {
+            event.preventDefault();
+            
+            const subject = document.getElementById('emailSubject').value.trim();
+            const htmlContent = quill.root.innerHTML;
+            
+            if (!subject) {
+                showMessage('Please enter a subject', 'error');
+                return;
+            }
+            
+            if (quill.getText().trim().length === 0) {
+                showMessage('Please enter a message', 'error');
+                return;
+            }
+            
+            if (!confirm('Are you sure you want to send this email to ALL registered users? This action cannot be undone.')) {
+                return;
+            }
+            
+            const btn = document.getElementById('sendEmailBtn');
+            btn.disabled = true;
+            btn.textContent = '📧 Sending...';
+            
+            try {
+                const response = await fetch('/admin/send-email-to-all', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        subject: subject,
+                        htmlContent: htmlContent,
+                        plainContent: quill.getText()
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Failed to send emails');
+                
+                const data = await response.json();
+                showMessage('Successfully sent email to ' + data.sentCount + ' users', 'success');
+                
+                // Reset form
+                document.getElementById('emailSubject').value = '';
+                quill.setContents([]);
+                document.getElementById('emailContent').value = '';
+                
+            } catch (error) {
+                console.error('Error sending emails:', error);
+                showMessage('Failed to send emails: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '📧 Send Email to All Users';
             }
         }
 
