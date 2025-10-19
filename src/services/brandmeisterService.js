@@ -2,6 +2,7 @@ const { io } = require('socket.io-client');
 const { pool } = require('../db/database');
 
 let socket = null;
+let successfulInsertions = 0;
 
 // Helper to check if a value is a non-empty string
 const isNonEmptyString = (v) => typeof v === 'string' && v.trim() !== '';
@@ -71,7 +72,11 @@ function startBrandmeisterService() {
             duration
           ]);
 
-          console.log(`Inserted: ${msg.SourceCall.trim()} → ${msg.DestinationName.trim()} (${duration}s)`);
+          // Count successful insertions and log every 100
+          successfulInsertions++;
+          if (successfulInsertions % 100 === 0) {
+            console.log(`[${new Date().toISOString()}] Successfully inserted ${successfulInsertions} records`);
+          }
         } catch (dbError) {
           console.error('Database insert error:', dbError.message);
         }
@@ -88,8 +93,12 @@ function startBrandmeisterService() {
 function stopBrandmeisterService() {
   if (socket) {
     console.log('Stopping Brandmeister websocket service...');
+    if (successfulInsertions > 0) {
+      console.log(`[${new Date().toISOString()}] Service stopped. Total successful insertions: ${successfulInsertions}`);
+    }
     socket.disconnect();
     socket = null;
+    successfulInsertions = 0; // Reset counter
   }
 }
 

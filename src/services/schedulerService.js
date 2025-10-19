@@ -1,18 +1,18 @@
 const { pool } = require('../db/database');
 const { updateTalkgroups } = require('./talkgroupsService');
 
-// Clean up lastheard records older than 7 days
+// Clean up lastheard records older than 31 days
 async function cleanupOldRecords() {
-  const sevenDaysAgo = Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60);
+  const thirtyOneDaysAgo = Math.floor(Date.now() / 1000) - (31 * 24 * 60 * 60);
   
   try {
     const result = await pool.query(`
       DELETE FROM lastheard 
       WHERE "Start" < $1
-    `, [sevenDaysAgo]);
+    `, [thirtyOneDaysAgo]);
     
     if (result.rowCount > 0) {
-      console.log(`Cleaned up ${result.rowCount} lastheard records older than 7 days`);
+      console.log(`Cleaned up ${result.rowCount} lastheard records older than 31 days`);
     }
   } catch (error) {
     console.error('Error cleaning up old records:', error);
