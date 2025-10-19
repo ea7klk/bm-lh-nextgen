@@ -120,7 +120,19 @@
     "requestNewApiKey": "Neuen API-Schlüssel Anfordern",
     "tip": "Tipp:",
     "tipMessage": "Fordern Sie Ihren neuen API-Schlüssel vor dem Ablaufdatum an, um Serviceunterbrechungen zu vermeiden.",
-    "anyQuestions": "Wenn Sie Fragen haben, zögern Sie nicht, uns zu kontaktieren."
+    "anyQuestions": "Wenn Sie Fragen haben, zögern Sie nicht, uns zu kontaktieren.",
+    "passwordResetSubject": "Setzen Sie Ihr Passwort zurück - Brandmeister Lastheard",
+    "passwordResetTitle": "Setzen Sie Ihr Passwort zurück",
+    "passwordResetBody": "Wir haben eine Anfrage zum Zurücksetzen Ihres Passworts erhalten. Klicken Sie auf die Schaltfläche unten, um ein neues Passwort zu erstellen:",
+    "resetPasswordButton": "Passwort zurücksetzen",
+    "resetLinkExpires": "Dieser Link läuft in 48 Stunden ab.",
+    "didNotRequestReset": "Wenn Sie kein Zurücksetzen des Passworts angefordert haben, ignorieren Sie bitte diese E-Mail und Ihr Passwort bleibt unverändert.",
+    "emailChangeSubject": "E-Mail-Änderung verifizieren - Brandmeister Lastheard",
+    "emailChangeTitle": "E-Mail-Änderung verifizieren",
+    "emailChangeBodyOld": "Wir haben eine Anfrage zum Ändern der mit Ihrem Konto verknüpften E-Mail-Adresse erhalten. Um fortzufahren, verifizieren Sie bitte Ihre aktuelle E-Mail-Adresse, indem Sie auf die Schaltfläche unten klicken:",
+    "emailChangeBodyNew": "Dies ist der letzte Schritt zum Abschluss Ihrer E-Mail-Änderung. Bitte verifizieren Sie Ihre neue E-Mail-Adresse, indem Sie auf die Schaltfläche unten klicken:",
+    "verifyEmailButton": "E-Mail verifizieren",
+    "didNotRequestChange": "Wenn Sie diese E-Mail-Änderung nicht angefordert haben, ignorieren Sie bitte diese E-Mail oder wenden Sie sich an den Support, wenn Sie Bedenken haben."
   },
   "user": {
     "registerTitle": "Benutzerregistrierung",
@@ -204,19 +216,5 @@
     "emailChanged": "E-Mail erfolgreich geändert!",
     "emailChangedMessage": "Ihre E-Mail-Adresse wurde erfolgreich aktualisiert.",
     "invalidOrExpiredToken": "Das Verifizierungstoken ist ungültig oder abgelaufen. Bitte versuchen Sie es erneut."
-  },
-  "email": {
-    "passwordResetSubject": "Setzen Sie Ihr Passwort zurück - Brandmeister Lastheard",
-    "passwordResetTitle": "Setzen Sie Ihr Passwort zurück",
-    "passwordResetBody": "Wir haben eine Anfrage zum Zurücksetzen Ihres Passworts erhalten. Klicken Sie auf die Schaltfläche unten, um ein neues Passwort zu erstellen:",
-    "resetPasswordButton": "Passwort zurücksetzen",
-    "resetLinkExpires": "Dieser Link läuft in 48 Stunden ab.",
-    "didNotRequestReset": "Wenn Sie kein Zurücksetzen des Passworts angefordert haben, ignorieren Sie bitte diese E-Mail und Ihr Passwort bleibt unverändert.",
-    "emailChangeSubject": "E-Mail-Änderung verifizieren - Brandmeister Lastheard",
-    "emailChangeTitle": "E-Mail-Änderung verifizieren",
-    "emailChangeBodyOld": "Wir haben eine Anfrage zum Ändern der mit Ihrem Konto verknüpften E-Mail-Adresse erhalten. Um fortzufahren, verifizieren Sie bitte Ihre aktuelle E-Mail-Adresse, indem Sie auf die Schaltfläche unten klicken:",
-    "emailChangeBodyNew": "Dies ist der letzte Schritt zum Abschluss Ihrer E-Mail-Änderung. Bitte verifizieren Sie Ihre neue E-Mail-Adresse, indem Sie auf die Schaltfläche unten klicken:",
-    "verifyEmailButton": "E-Mail verifizieren",
-    "didNotRequestChange": "Wenn Sie diese E-Mail-Änderung nicht angefordert haben, ignorieren Sie bitte diese E-Mail oder wenden Sie sich an den Support, wenn Sie Bedenken haben."
   }
 }

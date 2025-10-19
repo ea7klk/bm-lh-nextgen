@@ -746,7 +746,7 @@ router.get('/verify', async (req, res) => {
 
     // Create user account
     await pool.query(`INSERT INTO users (callsign, name, email, password_hash, is_active, locale)
-      VALUES ($1, $2, $3, $4, 1, $5)`, [verification.callsign, verification.name, verification.email, verification.password_hash, verification.locale]);
+      VALUES ($1, $2, $3, $4, TRUE, $5)`, [verification.callsign, verification.name, verification.email, verification.password_hash, verification.locale]);
 
     // Mark verification as complete
     await pool.query(`UPDATE user_verifications SET is_verified = TRUE WHERE id = $1`, [verification.id]);
@@ -2049,7 +2049,7 @@ router.get('/verify-email-change', async (req, res) => {
       // Mark old email as verified and generate token for new email
       const newEmailToken = uuidv4();
       await pool.query(`UPDATE email_change_tokens 
-        SET old_email_verified = 1, new_email_token = $1
+        SET old_email_verified = TRUE, new_email_token = $1
         WHERE id = $2`, [newEmailToken, emailChange.id]);
 
       // Get user details
@@ -2181,7 +2181,7 @@ router.get('/verify-email-change', async (req, res) => {
       // Mark new email as verified and update user's email
       await pool.query(`UPDATE users SET email = $1 WHERE id = $2`, [emailChangeNew.new_email, emailChangeNew.user_id]);
 
-      await pool.query(`UPDATE email_change_tokens SET new_email_verified = 1 WHERE id = $1`, [emailChangeNew.id]);
+      await pool.query(`UPDATE email_change_tokens SET new_email_verified = TRUE WHERE id = $1`, [emailChangeNew.id]);
 
       return res.send(`
 <!DOCTYPE html>

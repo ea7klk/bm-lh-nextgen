@@ -120,7 +120,19 @@
     "requestNewApiKey": "Solicitar Nueva Clave API",
     "tip": "Consejo:",
     "tipMessage": "Solicita tu nueva clave API antes de la fecha de expiración para evitar interrupciones en el servicio.",
-    "anyQuestions": "Si tienes alguna pregunta, no dudes en contactarnos."
+    "anyQuestions": "Si tienes alguna pregunta, no dudes en contactarnos.",
+    "passwordResetSubject": "Restablecer tu Contraseña - Brandmeister Lastheard",
+    "passwordResetTitle": "Restablecer tu Contraseña",
+    "passwordResetBody": "Recibimos una solicitud para restablecer tu contraseña. Haz clic en el botón de abajo para crear una nueva contraseña:",
+    "resetPasswordButton": "Restablecer Contraseña",
+    "resetLinkExpires": "Este enlace expirará en 48 horas.",
+    "didNotRequestReset": "Si no solicitaste restablecer tu contraseña, ignora este correo y tu contraseña permanecerá sin cambios.",
+    "emailChangeSubject": "Verificar Cambio de Correo - Brandmeister Lastheard",
+    "emailChangeTitle": "Verificar Cambio de Correo",
+    "emailChangeBodyOld": "Recibimos una solicitud para cambiar la dirección de correo asociada con tu cuenta. Para proceder, verifica tu dirección de correo actual haciendo clic en el botón de abajo:",
+    "emailChangeBodyNew": "Este es el paso final para completar tu cambio de correo. Verifica tu nueva dirección de correo haciendo clic en el botón de abajo:",
+    "verifyEmailButton": "Verificar Correo",
+    "didNotRequestChange": "Si no solicitaste este cambio de correo, ignora este correo o contacta con soporte si tienes inquietudes."
   },
   "user": {
     "registerTitle": "Registro de Usuario",
@@ -204,19 +216,5 @@
     "emailChanged": "¡Correo Electrónico Cambiado Exitosamente!",
     "emailChangedMessage": "Tu dirección de correo electrónico ha sido actualizada exitosamente.",
     "invalidOrExpiredToken": "El token de verificación es inválido o ha expirado. Por favor intenta de nuevo."
-  },
-  "email": {
-    "passwordResetSubject": "Restablecer tu Contraseña - Brandmeister Lastheard",
-    "passwordResetTitle": "Restablecer tu Contraseña",
-    "passwordResetBody": "Recibimos una solicitud para restablecer tu contraseña. Haz clic en el botón de abajo para crear una nueva contraseña:",
-    "resetPasswordButton": "Restablecer Contraseña",
-    "resetLinkExpires": "Este enlace expirará en 48 horas.",
-    "didNotRequestReset": "Si no solicitaste restablecer tu contraseña, ignora este correo y tu contraseña permanecerá sin cambios.",
-    "emailChangeSubject": "Verificar Cambio de Correo - Brandmeister Lastheard",
-    "emailChangeTitle": "Verificar Cambio de Correo",
-    "emailChangeBodyOld": "Recibimos una solicitud para cambiar la dirección de correo asociada con tu cuenta. Para proceder, verifica tu dirección de correo actual haciendo clic en el botón de abajo:",
-    "emailChangeBodyNew": "Este es el paso final para completar tu cambio de correo. Verifica tu nueva dirección de correo haciendo clic en el botón de abajo:",
-    "verifyEmailButton": "Verificar Correo",
-    "didNotRequestChange": "Si no solicitaste este cambio de correo, ignora este correo o contacta con soporte si tienes inquietudes."
   }
 }
