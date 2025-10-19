@@ -120,7 +120,19 @@
     "requestNewApiKey": "Demander une Nouvelle Clé API",
     "tip": "Astuce:",
     "tipMessage": "Demandez votre nouvelle clé API avant la date d'expiration pour éviter toute interruption de service.",
-    "anyQuestions": "Si vous avez des questions, n'hésitez pas à nous contacter."
+    "anyQuestions": "Si vous avez des questions, n'hésitez pas à nous contacter.",
+    "passwordResetSubject": "Réinitialiser votre mot de passe - Brandmeister Lastheard",
+    "passwordResetTitle": "Réinitialiser votre mot de passe",
+    "passwordResetBody": "Nous avons reçu une demande de réinitialisation de votre mot de passe. Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe:",
+    "resetPasswordButton": "Réinitialiser le mot de passe",
+    "resetLinkExpires": "Ce lien expirera dans 48 heures.",
+    "didNotRequestReset": "Si vous n'avez pas demandé de réinitialisation de mot de passe, veuillez ignorer cet e-mail et votre mot de passe restera inchangé.",
+    "emailChangeSubject": "Vérifier le changement d'e-mail - Brandmeister Lastheard",
+    "emailChangeTitle": "Vérifier le changement d'e-mail",
+    "emailChangeBodyOld": "Nous avons reçu une demande de modification de l'adresse e-mail associée à votre compte. Pour continuer, veuillez vérifier votre adresse e-mail actuelle en cliquant sur le bouton ci-dessous:",
+    "emailChangeBodyNew": "Ceci est la dernière étape pour terminer votre changement d'e-mail. Veuillez vérifier votre nouvelle adresse e-mail en cliquant sur le bouton ci-dessous:",
+    "verifyEmailButton": "Vérifier l'e-mail",
+    "didNotRequestChange": "Si vous n'avez pas demandé ce changement d'e-mail, veuillez ignorer cet e-mail ou contacter le support si vous avez des préoccupations."
   },
   "user": {
     "registerTitle": "Inscription Utilisateur",
@@ -204,19 +216,5 @@
     "emailChanged": "E-mail changé avec succès!",
     "emailChangedMessage": "Votre adresse e-mail a été mise à jour avec succès.",
     "invalidOrExpiredToken": "Le jeton de vérification est invalide ou a expiré. Veuillez réessayer."
-  },
-  "email": {
-    "passwordResetSubject": "Réinitialiser votre mot de passe - Brandmeister Lastheard",
-    "passwordResetTitle": "Réinitialiser votre mot de passe",
-    "passwordResetBody": "Nous avons reçu une demande de réinitialisation de votre mot de passe. Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe:",
-    "resetPasswordButton": "Réinitialiser le mot de passe",
-    "resetLinkExpires": "Ce lien expirera dans 48 heures.",
-    "didNotRequestReset": "Si vous n'avez pas demandé de réinitialisation de mot de passe, veuillez ignorer cet e-mail et votre mot de passe restera inchangé.",
-    "emailChangeSubject": "Vérifier le changement d'e-mail - Brandmeister Lastheard",
-    "emailChangeTitle": "Vérifier le changement d'e-mail",
-    "emailChangeBodyOld": "Nous avons reçu une demande de modification de l'adresse e-mail associée à votre compte. Pour continuer, veuillez vérifier votre adresse e-mail actuelle en cliquant sur le bouton ci-dessous:",
-    "emailChangeBodyNew": "Ceci est la dernière étape pour terminer votre changement d'e-mail. Veuillez vérifier votre nouvelle adresse e-mail en cliquant sur le bouton ci-dessous:",
-    "verifyEmailButton": "Vérifier l'e-mail",
-    "didNotRequestChange": "Si vous n'avez pas demandé ce changement d'e-mail, veuillez ignorer cet e-mail ou contacter le support si vous avez des préoccupations."
   }
 }
