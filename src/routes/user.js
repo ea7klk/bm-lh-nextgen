@@ -5,6 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const { pool } = require('../db/database');
 const { sendVerificationEmail } = require('../services/emailService');
 const { authenticateUser } = require('../middleware/userAuth');
+const { generateMatomoScript } = require('../utils/htmlHelpers');
 
 /**
  * @swagger
@@ -101,6 +102,7 @@ router.get('/register', async (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${__('user.registerTitle')} - Brandmeister Lastheard Next Generation</title>
+    ${generateMatomoScript()}
     <style>
         * {
             margin: 0;
@@ -515,6 +517,7 @@ router.get('/verify', async (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${__('user.verificationError')} - Brandmeister Lastheard Next Generation</title>
+    ${generateMatomoScript()}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -577,6 +580,7 @@ router.get('/verify', async (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${__('user.invalidToken')} - Brandmeister Lastheard Next Generation</title>
+    ${generateMatomoScript()}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -635,6 +639,7 @@ router.get('/verify', async (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${__('user.alreadyVerified')} - Brandmeister Lastheard Next Generation</title>
+    ${generateMatomoScript()}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -694,6 +699,7 @@ router.get('/verify', async (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${__('user.tokenExpired')} - Brandmeister Lastheard Next Generation</title>
+    ${generateMatomoScript()}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -758,6 +764,7 @@ router.get('/verify', async (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${__('user.accountVerified')} - Brandmeister Lastheard Next Generation</title>
+    ${generateMatomoScript()}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -826,6 +833,7 @@ router.get('/login', async (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${__('user.loginTitle')} - Brandmeister Lastheard Next Generation</title>
+    ${generateMatomoScript()}
     <style>
         * {
             margin: 0;
@@ -1211,6 +1219,7 @@ router.get('/forgot-password', async (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${__('user.forgotPasswordTitle')} - Brandmeister Lastheard Next Generation</title>
+    ${generateMatomoScript()}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -1423,6 +1432,7 @@ router.get('/reset-password', async (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${__('user.resetPasswordTitle')} - Brandmeister Lastheard Next Generation</title>
+    ${generateMatomoScript()}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -1636,6 +1646,7 @@ router.get('/profile', authenticateUser, (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${__('user.profileTitle')} - Brandmeister Lastheard Next Generation</title>
+    ${generateMatomoScript()}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -1999,6 +2010,7 @@ router.get('/verify-email-change', async (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${__('user.alreadyVerified')} - Brandmeister Lastheard</title>
+    ${generateMatomoScript()}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -2067,6 +2079,7 @@ router.get('/verify-email-change', async (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${__('user.emailVerified')} - Brandmeister Lastheard</title>
+    ${generateMatomoScript()}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -2131,6 +2144,7 @@ router.get('/verify-email-change', async (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${__('user.alreadyVerified')} - Brandmeister Lastheard</title>
+    ${generateMatomoScript()}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -2190,6 +2204,7 @@ router.get('/verify-email-change', async (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${__('user.emailChanged')} - Brandmeister Lastheard</title>
+    ${generateMatomoScript()}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -2246,6 +2261,7 @@ router.get('/verify-email-change', async (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${__('user.invalidToken')} - Brandmeister Lastheard</title>
+    ${generateMatomoScript()}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
