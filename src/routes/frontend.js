@@ -352,6 +352,7 @@ router.get('/', optionalAuthentication, (req, res) => {
                 ${user ? `
                     <span class="user-greeting">${__('user.greeting', '<a href="/user/profile" class="user-callsign" style="text-decoration: none;">' + user.callsign + '</a>')}</span>
                     <a href="/advanced" class="auth-link">${__('user.advancedFunctions')}</a>
+                    <a href="/statistics" class="auth-link">${__('user.advancedStatistics')}</a>
                     <button onclick="logout()" class="auth-link logout">${__('user.logoutButton')}</button>
                 ` : `
                     <a href="/user/login" class="auth-link">${__('user.loginButton')}</a>

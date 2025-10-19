@@ -17,6 +17,7 @@ const publicRoutes = require('./routes/public');
 const frontendRoutes = require('./routes/frontend');
 const userRoutes = require('./routes/user');
 const advancedRoutes = require('./routes/advanced');
+const statisticsRoutes = require('./routes/statistics');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -50,6 +51,9 @@ app.use('/', frontendRoutes);
 
 // Advanced functions (protected HTML page)
 app.use('/advanced', advancedRoutes);
+
+// Advanced statistics (protected HTML page)
+app.use('/statistics', statisticsRoutes);
 
 // Public API routes (no authentication required for viewing)
 app.use('/public', publicRoutes);

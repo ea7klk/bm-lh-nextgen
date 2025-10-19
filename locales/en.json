@@ -186,6 +186,7 @@
     "logoutButton": "Logout",
     "greeting": "Welcome %s",
     "advancedFunctions": "Advanced Functions",
+    "advancedStatistics": "Advanced Statistics",
     "advancedFunctionsPromo": "Advanced search and statistics are available to registered users.",
     "registerToAccess": "Register to access these features",
     "forgotPassword": "Forgot your password?",

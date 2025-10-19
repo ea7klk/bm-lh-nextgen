@@ -376,4 +376,272 @@ router.get('/lastheard/callsigns', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /public/statistics/network:
+ *   get:
+ *     summary: Get network overview statistics
+ *     description: Retrieve network-wide statistics for the specified time period
+ *     tags:
+ *       - Public Statistics
+ *     parameters:
+ *       - in: query
+ *         name: timeRange
+ *         schema:
+ *           type: string
+ *           enum: [5m, 15m, 30m, 1h, 2h, 6h, 12h, 24h, 2d, 5d, 1w, 2w, 1M]
+ *           default: 30m
+ *         description: Time range for statistics
+ *       - in: query
+ *         name: continent
+ *         schema:
+ *           type: string
+ *         description: Filter by continent name
+ *       - in: query
+ *         name: country
+ *         schema:
+ *           type: string
+ *         description: Filter by country code
+ *       - in: query
+ *         name: talkgroup
+ *         schema:
+ *           type: integer
+ *         description: Filter by talkgroup ID
+ *       - in: query
+ *         name: callsign
+ *         schema:
+ *           type: string
+ *         description: Filter by callsign pattern
+ *     responses:
+ *       200:
+ *         description: Network statistics
+ */
+router.get('/statistics/network', async (req, res) => {
+  try {
+    const timeRange = req.query.timeRange || '30m';
+    const continent = req.query.continent;
+    const country = req.query.country;
+    const talkgroup = req.query.talkgroup;
+    const callsign = req.query.callsign;
+    
+    // Calculate start time based on time range
+    const now = Math.floor(Date.now() / 1000);
+    const timeMap = {
+      '5m': 5 * 60,
+      '15m': 15 * 60,
+      '30m': 30 * 60,
+      '1h': 60 * 60,
+      '2h': 2 * 60 * 60,
+      '6h': 6 * 60 * 60,
+      '12h': 12 * 60 * 60,
+      '24h': 24 * 60 * 60,
+      '2d': 2 * 24 * 60 * 60,
+      '5d': 5 * 24 * 60 * 60,
+      '1w': 7 * 24 * 60 * 60,
+      '2w': 14 * 24 * 60 * 60,
+      '1M': 30 * 24 * 60 * 60
+    };
+    const startTime = now - (timeMap[timeRange] || timeMap['30m']);
+    
+    // Use database service to get network statistics
+    const stats = await LastheardService.getNetworkStatistics({
+      startTime,
+      continent,
+      country,
+      talkgroup: talkgroup ? parseInt(talkgroup) : null,
+      callsign
+    });
+    
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /public/statistics/activity:
+ *   get:
+ *     summary: Get activity trend statistics
+ *     description: Retrieve activity patterns and trends for the specified time period
+ *     tags:
+ *       - Public Statistics
+ *     parameters:
+ *       - in: query
+ *         name: timeRange
+ *         schema:
+ *           type: string
+ *           enum: [5m, 15m, 30m, 1h, 2h, 6h, 12h, 24h, 2d, 5d, 1w, 2w, 1M]
+ *           default: 30m
+ *         description: Time range for statistics
+ *     responses:
+ *       200:
+ *         description: Activity statistics
+ */
+router.get('/statistics/activity', async (req, res) => {
+  try {
+    const timeRange = req.query.timeRange || '30m';
+    const continent = req.query.continent;
+    const country = req.query.country;
+    const talkgroup = req.query.talkgroup;
+    const callsign = req.query.callsign;
+    
+    // Calculate start time based on time range
+    const now = Math.floor(Date.now() / 1000);
+    const timeMap = {
+      '5m': 5 * 60,
+      '15m': 15 * 60,
+      '30m': 30 * 60,
+      '1h': 60 * 60,
+      '2h': 2 * 60 * 60,
+      '6h': 6 * 60 * 60,
+      '12h': 12 * 60 * 60,
+      '24h': 24 * 60 * 60,
+      '2d': 2 * 24 * 60 * 60,
+      '5d': 5 * 24 * 60 * 60,
+      '1w': 7 * 24 * 60 * 60,
+      '2w': 14 * 24 * 60 * 60,
+      '1M': 30 * 24 * 60 * 60
+    };
+    const startTime = now - (timeMap[timeRange] || timeMap['30m']);
+    
+    // Use database service to get activity statistics
+    const stats = await LastheardService.getActivityStatistics({
+      startTime,
+      continent,
+      country,
+      talkgroup: talkgroup ? parseInt(talkgroup) : null,
+      callsign
+    });
+    
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /public/statistics/geographic:
+ *   get:
+ *     summary: Get geographic distribution statistics
+ *     description: Retrieve geographic activity patterns for the specified time period
+ *     tags:
+ *       - Public Statistics
+ *     parameters:
+ *       - in: query
+ *         name: timeRange
+ *         schema:
+ *           type: string
+ *           enum: [5m, 15m, 30m, 1h, 2h, 6h, 12h, 24h, 2d, 5d, 1w, 2w, 1M]
+ *           default: 30m
+ *         description: Time range for statistics
+ *     responses:
+ *       200:
+ *         description: Geographic statistics
+ */
+router.get('/statistics/geographic', async (req, res) => {
+  try {
+    const timeRange = req.query.timeRange || '30m';
+    const continent = req.query.continent;
+    const country = req.query.country;
+    const talkgroup = req.query.talkgroup;
+    const callsign = req.query.callsign;
+    
+    // Calculate start time based on time range
+    const now = Math.floor(Date.now() / 1000);
+    const timeMap = {
+      '5m': 5 * 60,
+      '15m': 15 * 60,
+      '30m': 30 * 60,
+      '1h': 60 * 60,
+      '2h': 2 * 60 * 60,
+      '6h': 6 * 60 * 60,
+      '12h': 12 * 60 * 60,
+      '24h': 24 * 60 * 60,
+      '2d': 2 * 24 * 60 * 60,
+      '5d': 5 * 24 * 60 * 60,
+      '1w': 7 * 24 * 60 * 60,
+      '2w': 14 * 24 * 60 * 60,
+      '1M': 30 * 24 * 60 * 60
+    };
+    const startTime = now - (timeMap[timeRange] || timeMap['30m']);
+    
+    // Use database service to get geographic statistics
+    const stats = await LastheardService.getGeographicStatistics({
+      startTime,
+      continent,
+      country,
+      talkgroup: talkgroup ? parseInt(talkgroup) : null,
+      callsign
+    });
+    
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /public/statistics/top:
+ *   get:
+ *     summary: Get top performers statistics
+ *     description: Retrieve top performers and records for the specified time period
+ *     tags:
+ *       - Public Statistics
+ *     parameters:
+ *       - in: query
+ *         name: timeRange
+ *         schema:
+ *           type: string
+ *           enum: [5m, 15m, 30m, 1h, 2h, 6h, 12h, 24h, 2d, 5d, 1w, 2w, 1M]
+ *           default: 30m
+ *         description: Time range for statistics
+ *     responses:
+ *       200:
+ *         description: Top performer statistics
+ */
+router.get('/statistics/top', async (req, res) => {
+  try {
+    const timeRange = req.query.timeRange || '30m';
+    const continent = req.query.continent;
+    const country = req.query.country;
+    const talkgroup = req.query.talkgroup;
+    const callsign = req.query.callsign;
+    
+    // Calculate start time based on time range
+    const now = Math.floor(Date.now() / 1000);
+    const timeMap = {
+      '5m': 5 * 60,
+      '15m': 15 * 60,
+      '30m': 30 * 60,
+      '1h': 60 * 60,
+      '2h': 2 * 60 * 60,
+      '6h': 6 * 60 * 60,
+      '12h': 12 * 60 * 60,
+      '24h': 24 * 60 * 60,
+      '2d': 2 * 24 * 60 * 60,
+      '5d': 5 * 24 * 60 * 60,
+      '1w': 7 * 24 * 60 * 60,
+      '2w': 14 * 24 * 60 * 60,
+      '1M': 30 * 24 * 60 * 60
+    };
+    const startTime = now - (timeMap[timeRange] || timeMap['30m']);
+    
+    // Use database service to get top performer statistics
+    const stats = await LastheardService.getTopStatistics({
+      startTime,
+      continent,
+      country,
+      talkgroup: talkgroup ? parseInt(talkgroup) : null,
+      callsign
+    });
+    
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
