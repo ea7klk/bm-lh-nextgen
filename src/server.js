@@ -17,6 +17,7 @@ const publicRoutes = require('./routes/public');
 const frontendRoutes = require('./routes/frontend');
 const userRoutes = require('./routes/user');
 const advancedRoutes = require('./routes/advanced');
+const mcpRoutes = require('./routes/mcp');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -63,6 +64,9 @@ app.use('/admin', adminRoutes);
 // API Routes (protected with API key authentication)
 app.use('/api', lastheardRoutes);
 app.use('/api', talkgroupsRoutes);
+
+// MCP (Model Context Protocol) endpoint – no authentication required
+app.use('/api', mcpRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
