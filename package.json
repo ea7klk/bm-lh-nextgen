@@ -7,6 +7,7 @@
     "start": "node src/server.js",
     "dev": "node src/server.js",
     "test": "echo \"✅ No tests configured yet\"",
+    "test-mcp": "node test-mcp.js",
     "test-email": "node test-email.js",
     "lint": "echo \"✅ No linting configured yet\"",
     "docker:build": "docker build -t bm-lh-nextgen .",
@@ -22,6 +23,7 @@
   "author": "EA7KLK",
   "license": "MIT",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "csv-parse": "^6.1.0",

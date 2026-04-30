@@ -222,6 +222,85 @@ The following endpoints are publicly accessible without authentication:
 - `GET /public/countries?continent=<continent>` - List countries for a continent
 - `GET /public/talkgroups?continent=<continent>&country=<country>` - List talkgroups for a continent/country
 
+### MCP (Model Context Protocol) Endpoint — No Authentication
+
+The server exposes an [Anthropic MCP](https://modelcontextprotocol.io/) server over Server-Sent Events (SSE):
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/mcp` | `GET` | Open SSE stream; server sends an `endpoint` event with the POST URL |
+| `/api/mcp/messages?sessionId=<id>` | `POST` | Send JSON-RPC 2.0 MCP messages |
+
+#### Available MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `get_statistics` | Overall summary counts (total entries, last-24h, unique callsigns/talkgroups) |
+| `get_top_talkgroups` | Top-N talkgroups by transmission count in a configurable time window |
+| `get_top_callsigns` | Top-N callsigns (operators) by transmission count in a configurable time window |
+| `get_recent_lastheard` | Most recent lastheard entries with optional callsign/talkgroup filtering |
+
+#### Testing the MCP endpoint locally
+
+**Smoke test** (requires the server to be running):
+
+```bash
+node test-mcp.js
+# or against a remote host:
+node test-mcp.js http://my-server:3000
+```
+
+**curl — establish the SSE stream and see the endpoint URL:**
+
+```bash
+curl -N -H "Accept: text/event-stream" http://localhost:3000/api/mcp
+# Expected output (example):
+#   event: endpoint
+#   data: /api/mcp/messages?sessionId=<uuid>
+```
+
+**curl — send a `tools/list` request** (replace `<sessionId>` with the value above):
+
+```bash
+# Step 1 – initialize
+curl -s -X POST \
+  "http://localhost:3000/api/mcp/messages?sessionId=<sessionId>" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","clientInfo":{"name":"curl-test","version":"1.0.0"},"capabilities":{}}}'
+
+# Step 2 – send initialized notification
+curl -s -X POST \
+  "http://localhost:3000/api/mcp/messages?sessionId=<sessionId>" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"notifications/initialized","params":{}}'
+
+# Step 3 – list tools
+curl -s -X POST \
+  "http://localhost:3000/api/mcp/messages?sessionId=<sessionId>" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+```
+
+The responses arrive as SSE `message` events on the open stream from Step 1.
+
+**Example — call `get_statistics`:**
+
+```bash
+curl -s -X POST \
+  "http://localhost:3000/api/mcp/messages?sessionId=<sessionId>" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_statistics","arguments":{}}}'
+```
+
+**Example — call `get_top_callsigns` for the last 24 hours:**
+
+```bash
+curl -s -X POST \
+  "http://localhost:3000/api/mcp/messages?sessionId=<sessionId>" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"get_top_callsigns","arguments":{"timeRange":"24h","limit":10}}}'
+```
+
 ### System Endpoints
 - `GET /health` - Health check endpoint (always available)
 
@@ -293,7 +372,8 @@ bm-lh-nextgen/
 │   │   ├── advanced.js          # Advanced functions routes (authenticated)
 │   │   ├── public.js            # Public API routes (no auth required)
 │   │   ├── lastheard.js         # Reserved for future authenticated endpoints
-│   │   └── talkgroups.js        # Reserved for future authenticated endpoints
+│   │   ├── talkgroups.js        # Reserved for future authenticated endpoints
+│   │   └── mcp.js               # MCP SSE endpoint (no auth)
 │   ├── services/
 │   │   ├── databaseService.js   # Database access layer (new)
 │   │   ├── emailService.js      # Email sending service
